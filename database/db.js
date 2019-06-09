@@ -1,7 +1,9 @@
 const Connection = require('tedious').Connection;
 const Request = require('tedious').Request;
-const debug = require('debug')('brewback:db');
 const config = require('../config/config');
+const logHelper = require('../helpers/logHelper');
+
+const logger = logHelper.getLogger('application');
 
 let _connection = null;
 
@@ -18,7 +20,7 @@ const connect = function(resolve, reject) {
         if (err) {
             reject(err);
         } else {
-            debug('Connected to DB');
+            logger.info('Connected to DB');
             resolve();
         }
     });
@@ -34,7 +36,7 @@ const getConnection = function() {
                     resolve(_connection);
                 })
                 .catch(err => {
-                    debug(`Unable to connect to database: ${err}`);
+                    logger.error(`Unable to connect to database: ${err}`);
                     reject(err);
                 });
         }
@@ -47,20 +49,17 @@ const db = {
             const result = [];
             const request = new Request(query, function(err, rowCount, rows) {
                 if (err) {
-                    debug(err);
+                    logger.error(err);
                     reject(err);
                 } else {
-                    debug(`Query complete: '${query}'`);
-                    debug(`Rows: ${rowCount}`);
+                    logger.info(`Query complete: '${query}'`);
+                    logger.info(`Rows: ${rowCount}`);
                     resolve(result);
                 }
             });
 
             if (params) {
                 params.forEach(param => {
-                    // debug(`param: ${param.name}`);
-                    // debug(param.type);
-                    // debug(`${param.value}`);
                     request.addParameter(param.name, param.type, param.value);
                 });
             }
