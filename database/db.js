@@ -53,6 +53,10 @@ const db = {
                     reject(err);
                 } else {
                     logger.info(`Query complete: '${query}'`);
+                    if (params && params.length > 0) {
+                        let msg = params.map(p => `${p.name}=${p.value}`);
+                        logger.info(msg.join(', '));
+                    }
                     logger.info(`Rows: ${rowCount}`);
                     resolve(result);
                 }

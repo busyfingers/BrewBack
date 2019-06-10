@@ -1,17 +1,49 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
-const debug = require('debug')('brewback:route:measurements');
 const TYPES = require('tedious').TYPES;
+const logHelper = require('../helpers/logHelper');
+
+const logger = logHelper.getLogger('application');
 
 /* GET users listing. */
-router.get('/', async function(req, res, next) {
+router.get('/', async function(req, res) {
     try {
         let queryBase = 'SELECT * FROM Measurements WHERE ';
         let queryData = prepareQuery(queryBase, req.query);
         const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
 
         res.send(result).status(200);
+    } catch (err) {
+        res.send(err).status(500);
+    }
+});
+
+router.post('/', async function(req, res) {
+    try {
+        const payloadIsValid = validatePayload(req.body);
+        const measuredAt = new Date(req.body.measuredAt);
+
+        if (!isValidDate(measuredAt)) {
+            res.sendStatus(400);
+            return;
+        }
+
+        if (payloadIsValid) {
+            const sql = `INSERT INTO dbo.Measurements (Type, Value, MeasuredAt, Unit) VALUES (@Type, @Value, @MeasuredAt, @Unit)`;
+            const params = [
+                { name: 'Type', type: TYPES.NVarChar, value: req.body.type.toUpperCase() },
+                { name: 'Value', type: TYPES.Decimal, value: Number(req.body.value) },
+                { name: 'MeasuredAt', type: TYPES.DateTime, value: measuredAt },
+                { name: 'Unit', type: TYPES.NVarChar, value: req.body.unit.toUpperCase() }
+            ];
+
+            await db.execQuery(sql, params);
+
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(400);
+        }
     } catch (err) {
         res.send(err).status(500);
     }
@@ -38,6 +70,33 @@ const prepareQuery = function(sql, querystring) {
         sqlQuery: sql,
         parameters: params
     };
+};
+
+const validatePayload = function(data) {
+    if (Object.keys(data).length === 0 && data.constructor === Object) {
+        return false;
+    }
+
+    if (!data.type || !data.value || !data.measuredAt || !data.unit) {
+        return false;
+    }
+
+    if (
+        typeof data.type !== 'string' ||
+        typeof data.value !== 'number' ||
+        typeof data.measuredAt !== 'string' ||
+        typeof data.unit !== 'string'
+    ) {
+        return false;
+    }
+
+    return true;
+};
+
+const isValidDate = function(date) {
+    var valid = date instanceof Date && !isNaN(date);
+    console.log('valid date:', valid);
+    return valid;
 };
 
 module.exports = router;
