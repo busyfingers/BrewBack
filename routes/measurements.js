@@ -1,13 +1,13 @@
+/**
+ * Module dependencies
+ */
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const TYPES = require('tedious').TYPES;
-const logHelper = require('../helpers/logHelper');
+const passport = require('passport');
 
-const logger = logHelper.getLogger('application');
-
-/* GET users listing. */
-router.get('/', async function(req, res) {
+router.get('/', passport.authenticate('bearer', { session: false }), async function(req, res) {
     try {
         let queryBase = 'SELECT * FROM Measurements WHERE ';
         let queryData = prepareQuery(queryBase, req.query);
@@ -19,7 +19,7 @@ router.get('/', async function(req, res) {
     }
 });
 
-router.post('/', async function(req, res) {
+router.post('/', passport.authenticate('bearer', { session: false }), async function(req, res) {
     try {
         const payloadIsValid = validatePayload(req.body);
         const measuredAt = new Date(req.body.measuredAt);
@@ -94,9 +94,7 @@ const validatePayload = function(data) {
 };
 
 const isValidDate = function(date) {
-    var valid = date instanceof Date && !isNaN(date);
-    console.log('valid date:', valid);
-    return valid;
+    return date instanceof Date && !isNaN(date);
 };
 
 module.exports = router;

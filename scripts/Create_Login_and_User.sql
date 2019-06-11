@@ -10,3 +10,6 @@ GO
 
 GRANT INSERT ON dbo.Measurements TO bb_measurements
 GO
+
+GRANT SELECT ON dbo.Users TO bb_measurements
+GO

@@ -1,10 +1,12 @@
+/**
+ * Module dependencies
+ */
 const Connection = require('tedious').Connection;
 const Request = require('tedious').Request;
 const config = require('../config/config');
 const logHelper = require('../helpers/logHelper');
 
 const logger = logHelper.getLogger('application');
-
 let _connection = null;
 
 const tryAtMost = function(tries, executor) {
