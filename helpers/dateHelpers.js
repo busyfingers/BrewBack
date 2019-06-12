@@ -12,7 +12,7 @@ lib.getCurrentTimeStamp = function() {
     const paddingDiff = 3 - ms.length;
 
     return `${now.getFullYear()}-${(mm > 9 ? '' : '0') + mm}-${(dd > 9 ? '' : '0') + dd} ${(hh === 0 ? '0' : '') +
-        hh}:${(min > 9 ? '' : '0') + min}:${(ss === 0 ? '0' : '') + ss}.${'0'.repeat(paddingDiff) + ms}`;
+        hh}:${(min > 9 ? '' : '0') + min}:${(ss > 9 ? '' : '0') + ss}.${'0'.repeat(paddingDiff) + ms}`;
 };
 
 module.exports = lib;
