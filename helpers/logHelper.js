@@ -15,7 +15,7 @@ const myFormat = printf(({ level, message, timestamp }) => {
 
 lib.getLogger = function(name) {
     const rotationTransport = new winston.transports.DailyRotateFile({
-        filename: `${name}-%DATE%.log`,
+        filename: `logs/${name}-%DATE%.log`,
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
         maxSize: '20m',
