@@ -1,10 +1,9 @@
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var passport = require('passport');
-var bearerStrategy = require('passport-http-bearer').Strategy;
-var users = require('./models/users');
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const passport = require('passport');
+const bearerStrategy = require('passport-http-bearer').Strategy;
+const users = require('./models/users');
 
 const measurementsRouter = require('./routes/measurements');
 
@@ -22,14 +21,16 @@ passport.use(
     })
 );
 
-var app = express();
+const app = express();
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/measurements', measurementsRouter);
+app.use('/api/measurements', measurementsRouter);
+app.all('*', function(req, res) {
+    res.sendStatus(404);
+});
 
 module.exports = app;
