@@ -5,7 +5,7 @@ const passport = require('passport');
 const bearerStrategy = require('passport-http-bearer').Strategy;
 const users = require('./models/users');
 
-const measurementsRouter = require('./routes/measurements');
+const temperatureRouter = require('./routes/temperature');
 
 passport.use(
     new bearerStrategy(async (token, cb) => {
@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/api/measurements', measurementsRouter);
+app.use('/api/temperature', temperatureRouter);
 app.all('*', function(req, res) {
     res.sendStatus(404);
 });

@@ -9,7 +9,7 @@ const passport = require('passport');
 
 router.get('/', passport.authenticate('bearer', { session: false }), async function(req, res) {
     try {
-        let queryBase = 'SELECT * FROM Measurements WHERE ';
+        let queryBase = 'SELECT Value, MeasuredAt FROM dbo.Temperature WHERE ';
         let queryData = prepareQuery(queryBase, req.query);
         const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
 
@@ -30,12 +30,11 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
         }
 
         if (payloadIsValid) {
-            const sql = `INSERT INTO dbo.Measurements (Type, Value, MeasuredAt, Unit) VALUES (@Type, @Value, @MeasuredAt, @Unit)`;
+            const sql = `INSERT INTO dbo.Temperature (Value, MeasuredAt) VALUES (@Value, @MeasuredAt)`;
             const params = [
-                { name: 'Type', type: TYPES.NVarChar, value: req.body.type.toUpperCase() },
-                { name: 'Value', type: TYPES.Decimal, value: Number(req.body.value) },
-                { name: 'MeasuredAt', type: TYPES.DateTime, value: measuredAt },
-                { name: 'Unit', type: TYPES.NVarChar, value: req.body.unit.toUpperCase() }
+                // JS Number gets converted to int with TYPES.Decimal, so using string representation instead
+                { name: 'Value', type: TYPES.NVarChar, value: req.body.value.toFixed(2) },
+                { name: 'MeasuredAt', type: TYPES.DateTime, value: measuredAt }
             ];
 
             await db.execQuery(sql, params);
@@ -66,6 +65,8 @@ const prepareQuery = function(sql, querystring) {
         sql += whereClause.join(' AND ');
     }
 
+    sql += ' ORDER BY MeasuredAt';
+
     return {
         sqlQuery: sql,
         parameters: params
@@ -77,16 +78,11 @@ const validatePayload = function(data) {
         return false;
     }
 
-    if (!data.type || !data.value || !data.measuredAt || !data.unit) {
+    if (!data.value || !data.measuredAt) {
         return false;
     }
 
-    if (
-        typeof data.type !== 'string' ||
-        typeof data.value !== 'number' ||
-        typeof data.measuredAt !== 'string' ||
-        typeof data.unit !== 'string'
-    ) {
+    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'string') {
         return false;
     }
 

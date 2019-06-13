@@ -1,8 +1,0 @@
-CREATE TABLE Measurements
-(
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    Type NVARCHAR(15) NOT NULL,
-    Value DECIMAL(5,3) NOT NULL,
-    Unit NVARCHAR(5) NOT NULL,
-    MeasuredAt DATETIME NOT NULL
-);
