@@ -1,3 +1,6 @@
+# Clean deploy dir
+rm -r deploy/BrewBack
+
 # Make sure necessary folders exist
 if [ ! -d "deploy" ]
 then

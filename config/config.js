@@ -19,7 +19,8 @@ config.getDatabaseConfig = function() {
             }
         },
         options: {
-            database: configValues.dbName
+            database: configValues.dbName,
+            useUTC: false
         }
     };
 };
