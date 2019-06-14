@@ -82,7 +82,7 @@ const validatePayload = function(data) {
         return false;
     }
 
-    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'string') {
+    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number') {
         return false;
     }
 

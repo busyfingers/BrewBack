@@ -5,6 +5,7 @@ const Connection = require('tedious').Connection;
 const Request = require('tedious').Request;
 const config = require('../config/config');
 const logHelper = require('../helpers/logHelper');
+const { getLocalISOString } = require('../helpers/dateHelpers');
 
 const logger = logHelper.getLogger('application');
 let _connection = null;
@@ -79,7 +80,12 @@ const db = {
                 const row = {};
                 columns.forEach(function(column) {
                     if (column.value !== null) {
-                        row[column.metadata.colName] = column.value;
+                        // Datetimes are stored in local time, built-in toString() converts them to UTC
+                        if (Object.prototype.toString.call(column.value) === '[object Date]') {
+                            row[column.metadata.colName] = getLocalISOString(column.value);
+                        } else {
+                            row[column.metadata.colName] = column.value;
+                        }
                     }
                 });
                 result.push(row);

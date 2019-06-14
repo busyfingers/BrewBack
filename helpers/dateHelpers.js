@@ -15,4 +15,10 @@ lib.getCurrentTimeStamp = function() {
         hh}:${(min > 9 ? '' : '0') + min}:${(ss > 9 ? '' : '0') + ss}.${'0'.repeat(paddingDiff) + ms}`;
 };
 
+// https://stackoverflow.com/questions/10830357/javascript-toisostring-ignores-timezone-offset#
+lib.getLocalISOString = function(date) {
+    const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
+    return new Date(date - tzoffset).toISOString();
+};
+
 module.exports = lib;
