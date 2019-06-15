@@ -2,5 +2,8 @@
     "dbServer": "",
     "dbUser": "",
     "dbPass": "",
-    "dbName": ""
+    "dbName": "",
+    "dbPoolSize": 5,
+    "dbPoolGetTimeout": 3000,
+    "dbPoolRetryInterval": 50
 }
