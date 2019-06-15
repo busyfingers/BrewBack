@@ -25,4 +25,10 @@ config.getDatabaseConfig = function() {
     };
 };
 
+config.dbConnectionPool = {
+    poolSize: 5,
+    getTimeout: 3000,
+    retryInterval: 50
+};
+
 module.exports = config;
