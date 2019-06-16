@@ -7,12 +7,12 @@ var app = require('../app');
 var http = require('http');
 const config = require('../config/config');
 const logHelper = require('../helpers/logHelper');
-const db = require('../database/db');
+const pool = require('../database/connectionPool');
 
 const logger = logHelper.getLogger('application');
 
 config.setConfigValues();
-db.initiateConnectionPool();
+pool.initiateConnectionPool();
 
 /**
  * Get port from environment and store in Express.
