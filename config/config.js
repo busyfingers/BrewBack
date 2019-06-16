@@ -6,6 +6,11 @@ let configValues = {};
 
 config.setConfigValues = function() {
     configValues = JSON.parse(fs.readFileSync(path.join(__dirname, './config.json')));
+    config.dbConnectionPool = {
+        poolSize: configValues.dbPoolSize,
+        getTimeout: configValues.dbPoolGetTimeout,
+        retryInterval: configValues.dbPoolRetryInterval
+    };
 };
 
 config.getDatabaseConfig = function() {
@@ -23,12 +28,6 @@ config.getDatabaseConfig = function() {
             useUTC: false
         }
     };
-};
-
-config.dbConnectionPool = {
-    poolSize: configValues.dbPoolSize,
-    getTimeout: configValues.dbPoolGetTimeout,
-    retryInterval: configValues.dbPoolRetryInterval
 };
 
 module.exports = config;
