@@ -2,7 +2,8 @@
  * Module dependencies
  */
 const Connection = require('tedious').Connection;
-const config = require('../config/config');
+import * as config from '../config/config';
+// const config = require('../config/config');
 const logHelper = require('../helpers/logHelper');
 
 const READY = 0;
@@ -11,8 +12,8 @@ const logger = logHelper.getLogger('application');
 const _pool = [];
 const lib = {};
 
-lib.initiateConnectionPool = async function() {
-    const size = config.dbConnectionPool.poolSize;
+const initiateConnectionPool = async function() {
+    const size = config.poolConfig.size;
 
     if (_pool.length > 0) {
         return; // we don't want to initialize more than once
@@ -34,9 +35,9 @@ lib.initiateConnectionPool = async function() {
     }
 };
 
-lib.getConnection = function() {
+const getConnection = function() {
     return new Promise((resolve, reject) => {
-        const limit = config.dbConnectionPool.getTimeout / config.dbConnectionPool.retryInterval;
+        const limit = config.poolConfig.getTimeout / config.poolConfig.retryInterval;
         let attempts = 0;
         let connector = findAvailableConnector();
 
@@ -57,11 +58,11 @@ lib.getConnection = function() {
                 clearInterval(interval);
                 return reject();
             }
-        }, config.dbConnectionPool.retryInterval);
+        }, config.poolConfig.retryInterval);
     });
 };
 
-lib.releaseConnection = function(id) {
+const releaseConnection = function(id) {
     // Call this fire-and-forget style since waiting for the release slows down processing
     _pool[id].connection.reset(async err => {
         if (err) {
@@ -116,4 +117,5 @@ const tryAtMost = function(tries, executor) {
     return new Promise(executor).catch(err => (tries > 0 ? tryAtMost(tries, executor) : Promise.reject(err)));
 };
 
-module.exports = lib;
+export { initiateConnectionPool };
+export { releaseConnection };

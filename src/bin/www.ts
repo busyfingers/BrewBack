@@ -3,11 +3,11 @@
 /**
  * Module dependencies
  */
-var app = require('../app');
-var http = require('http');
-const config = require('../config/config');
-const logHelper = require('../helpers/logHelper');
-const pool = require('../database/connectionPool');
+import * as app from '../app';
+import * as http from 'http';
+import * as config from '../config/config';
+import * as logHelper from '../helpers/logHelper';
+import * as pool from '../database/connectionPool';
 
 const logger = logHelper.getLogger('application');
 

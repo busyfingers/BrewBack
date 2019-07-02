@@ -1,9 +1,9 @@
 /**
  * Module dependencies
  */
-const winston = require('winston');
-require('winston-daily-rotate-file');
-const dateHelpers = require('./dateHelpers');
+import * as winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import * as dateHelpers from './dateHelpers';
 
 const lib = {};
 
@@ -13,8 +13,8 @@ const myFormat = printf(({ level, message, timestamp }) => {
     return `${timestamp} [${level.toUpperCase()}]: ${message}`;
 });
 
-lib.getLogger = function(name) {
-    const rotationTransport = new winston.transports.DailyRotateFile({
+const getLogger = function(name: string) {
+    const rotationTransport = new DailyRotateFile({
         filename: `logs/${name}-%DATE%.log`,
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
@@ -24,10 +24,10 @@ lib.getLogger = function(name) {
 
     return winston.createLogger({
         level: 'debug',
-        format: combine(timestamp({ format: dateHelpers.getCurrentTimeStamp }), myFormat),
+        format: combine(timestamp({ format: dateHelpers.getCurrentTimeStamp() }), myFormat), // TODO: getCurrentTimeStamp -> getCurrentTimeStamp()   OK?
         defaultMeta: { service: 'user-service' },
         transports: [rotationTransport, new winston.transports.Console()]
     });
 };
 
-module.exports = lib;
+export { getLogger };

@@ -1,6 +1,4 @@
-const lib = {};
-
-lib.getCurrentTimeStamp = function() {
+const getCurrentTimeStamp = function() {
     const now = new Date();
     const mm = now.getMonth() + 1; // getMonth() is zero-based
     const dd = now.getDate();
@@ -16,9 +14,10 @@ lib.getCurrentTimeStamp = function() {
 };
 
 // https://stackoverflow.com/questions/10830357/javascript-toisostring-ignores-timezone-offset#
-lib.getLocalISOString = function(date) {
+const getLocalISOString = function(date: Date) {
     const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
-    return new Date(date - tzoffset).toISOString();
+    return new Date(date.getTime() - tzoffset).toISOString(); // TODO: date -> date.getTime()  OK?
 };
 
-module.exports = lib;
+export { getCurrentTimeStamp };
+export { getLocalISOString };

@@ -1,7 +1,7 @@
 export type PoolConfig = {
-    poolSize: number;
-    poolGetTimeout: number;
-    poolRetryInterval: number;
+    size: number;
+    getTimeout: number;
+    retryInterval: number;
 };
 
 export type DatabaseConfig = {
