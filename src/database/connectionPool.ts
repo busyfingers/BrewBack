@@ -1,15 +1,16 @@
 /**
  * Module dependencies
  */
-const Connection = require('tedious').Connection;
+import { Connection } from 'tedious';
 import * as config from '../config/config';
+import { PoolItem } from '../types';
 // const config = require('../config/config');
 const logHelper = require('../helpers/logHelper');
 
 const READY = 0;
 const BUSY = 1;
 const logger = logHelper.getLogger('application');
-const _pool = [];
+const _pool: Array<PoolItem> = [];
 const lib = {};
 
 const initiateConnectionPool = async function() {
@@ -21,7 +22,9 @@ const initiateConnectionPool = async function() {
 
     for (let i = 0; i < size; i++) {
         const con = await resolveDbConnection().catch(err => {
-            logger.error(`Error connecting to db: ${err}`);
+            const msg = `Error connecting to db: ${err}`;
+            logger.error(msg);
+            throw new Error(msg);
         });
         const poolItem = {
             connection: con,
@@ -62,7 +65,7 @@ const getConnection = function() {
     });
 };
 
-const releaseConnection = function(id) {
+const releaseConnection = function(id: number) {
     // Call this fire-and-forget style since waiting for the release slows down processing
     _pool[id].connection.reset(async err => {
         if (err) {
@@ -75,7 +78,7 @@ const releaseConnection = function(id) {
     });
 };
 
-const connect = function(resolve, reject) {
+const connect = function(resolve: Function, reject: Function) {
     const dbConfig = config.getDatabaseConfig();
     const connection = new Connection(dbConfig);
 
@@ -90,12 +93,12 @@ const connect = function(resolve, reject) {
 };
 
 const resolveDbConnection = function() {
-    return new Promise((resolve, reject) => {
+    return new Promise<Connection>((resolve, reject) => {
         tryAtMost(3, connect)
-            .then(connection => {
+            .then((connection: Connection) => {
                 resolve(connection);
             })
-            .catch(err => {
+            .catch((err: any) => {
                 logger.error(`Unable to connect to database: ${err}`);
                 reject(err);
             });
@@ -112,9 +115,20 @@ const findAvailableConnector = function() {
     return null;
 };
 
-const tryAtMost = function(tries, executor) {
+// TODO: Merge function "connect" into this, no need for a generic function that does retries
+const tryAtMost = async function(
+    tries: number,
+    executor: {
+        (resolve: Function, reject: Function): void;
+        (resolve: (value?: Connection) => void, reject: (reason?: any) => void): void;
+    }
+): Promise<Connection> {
     --tries;
-    return new Promise(executor).catch(err => (tries > 0 ? tryAtMost(tries, executor) : Promise.reject(err)));
+    try {
+        return new Promise(executor);
+    } catch (err) {
+        return await (tries > 0 ? tryAtMost(tries, executor) : Promise.reject(err));
+    }
 };
 
 export { initiateConnectionPool };

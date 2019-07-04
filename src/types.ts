@@ -1,3 +1,5 @@
+import { Connection } from 'tedious';
+
 export type PoolConfig = {
     size: number;
     getTimeout: number;
@@ -17,4 +19,9 @@ export type DatabaseConfig = {
         database: string;
         useUTC: boolean;
     };
+};
+
+export type PoolItem = {
+    connection: Connection;
+    status: number;
 };
