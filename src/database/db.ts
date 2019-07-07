@@ -1,21 +1,21 @@
 /**
  * Module dependencies
  */
-const Request = require('tedious').Request;
-const logHelper = require('../helpers/logHelper');
-const { getLocalISOString } = require('../helpers/dateHelpers');
-const pool = require('./connectionPool');
+import { Request } from 'tedious';
+import * as logHelper from '../helpers/logHelper';
+import { getLocalISOString } from '../helpers/dateHelpers';
+import * as pool from './connectionPool';
+import { QueryParameter, RowResult } from '../types';
 
 const logger = logHelper.getLogger('application');
-const db = {};
 
-db.execQuery = function(query, params) {
+const execQuery = function(query: string, params: Array<QueryParameter>) {
     return new Promise((resolve, reject) => {
-        const result = [];
+        const result: Array<RowResult> = [];
         pool.getConnection()
-            .then(poolItem => {
+            .then(connector => {
                 const request = new Request(query, async function(err, rowCount, rows) {
-                    pool.releaseConnection(poolItem.id);
+                    pool.releaseConnection(connector.id);
 
                     if (err) {
                         logger.error(err);
@@ -43,7 +43,7 @@ db.execQuery = function(query, params) {
                 }
 
                 request.on('row', function(columns) {
-                    const row = {};
+                    const row: RowResult = {}; // as ResultRow;
                     columns.forEach(function(column) {
                         if (column.value !== null) {
                             // Datetimes are stored in local time, built-in toString() converts them to UTC
@@ -57,7 +57,7 @@ db.execQuery = function(query, params) {
                     result.push(row);
                 });
 
-                poolItem.connection.execSql(request);
+                connector.connection.execSql(request);
             })
             .catch(err => {
                 reject(err);
@@ -65,4 +65,4 @@ db.execQuery = function(query, params) {
     });
 };
 
-module.exports = db;
+export { execQuery };

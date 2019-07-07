@@ -1,4 +1,5 @@
-import { Connection } from 'tedious';
+import { Connection, TediousType } from 'tedious';
+import { setConfigValues } from './config/config';
 
 export type PoolConfig = {
     size: number;
@@ -25,3 +26,23 @@ export type PoolItem = {
     connection: Connection;
     status: number;
 };
+
+export type Connector = {
+    id: number;
+    connection: Connection;
+};
+
+export type QueryParameter = {
+    name: string;
+    type: TediousType;
+    value: any;
+};
+
+// https://stackoverflow.com/questions/30840596/how-to-do-dynamic-objects-in-typescript
+// export interface IValue {
+//     prop: any;
+// }
+
+export interface RowResult {
+    [name: string]: string;
+}
