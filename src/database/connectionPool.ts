@@ -3,15 +3,13 @@
  */
 import { Connection } from 'tedious';
 import * as config from '../config/config';
-import { PoolItem } from '../types';
-// const config = require('../config/config');
-const logHelper = require('../helpers/logHelper');
+import { PoolItem, Connector } from '../types';
+import * as logHelper from '../helpers/logHelper';
 
 const READY = 0;
 const BUSY = 1;
 const logger = logHelper.getLogger('application');
 const _pool: Array<PoolItem> = [];
-const lib = {};
 
 const initiateConnectionPool = async function() {
     const size = config.poolConfig.size;
@@ -39,7 +37,7 @@ const initiateConnectionPool = async function() {
 };
 
 const getConnection = function() {
-    return new Promise((resolve, reject) => {
+    return new Promise<Connector>((resolve, reject) => {
         const limit = config.poolConfig.getTimeout / config.poolConfig.retryInterval;
         let attempts = 0;
         let connector = findAvailableConnector();
@@ -105,7 +103,7 @@ const resolveDbConnection = function() {
     });
 };
 
-const findAvailableConnector = function() {
+const findAvailableConnector = function(): Connector | null {
     for (let i = 0; i < _pool.length; i++) {
         if (_pool[i].status == READY) {
             _pool[i].status = BUSY;
@@ -132,4 +130,5 @@ const tryAtMost = async function(
 };
 
 export { initiateConnectionPool };
+export { getConnection };
 export { releaseConnection };
