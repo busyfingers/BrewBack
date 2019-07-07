@@ -4,11 +4,10 @@ import * as logger from 'morgan';
 import * as passport from 'passport';
 import { Strategy } from 'passport-http-bearer';
 import * as users from './src/models/users';
-
-const temperatureRouter = require('./routes/temperature');
+import * as temperatureRouter from './src/routes/temperature';
 
 passport.use(
-    new Strategy(async (token, cb) => {
+    new Strategy(async (token: string, cb: Function) => {
         try {
             const user = await users.getByToken(token);
             if (user) {
