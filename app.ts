@@ -1,14 +1,14 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const passport = require('passport');
-const bearerStrategy = require('passport-http-bearer').Strategy;
-const users = require('./models/users');
+import * as express from 'express';
+import * as cookieParser from 'cookie-parser';
+import * as logger from 'morgan';
+import * as passport from 'passport';
+import { Strategy } from 'passport-http-bearer';
+import * as users from './src/models/users';
 
 const temperatureRouter = require('./routes/temperature');
 
 passport.use(
-    new bearerStrategy(async (token, cb) => {
+    new Strategy(async (token, cb) => {
         try {
             const user = await users.getByToken(token);
             if (user) {
