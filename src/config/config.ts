@@ -7,9 +7,9 @@ let databaseConfig = {} as DatabaseConfig;
 
 const setConfigValues = function() {
     const values = JSON.parse(fs.readFileSync(path.join(__dirname, './config.json')).toString());
-    poolConfig.poolSize = values.dbPoolSize;
-    poolConfig.poolGetTimeout = values.dbPoolGetTimeout;
-    poolConfig.poolRetryInterval = values.dbPoolRetryInterval;
+    poolConfig.size = values.dbPoolSize;
+    poolConfig.getTimeout = values.dbPoolGetTimeout;
+    poolConfig.retryInterval = values.dbPoolRetryInterval;
     databaseConfig.server = values.dbServer;
     databaseConfig.authentication = {
         type: 'default',
