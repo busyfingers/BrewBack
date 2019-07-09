@@ -1,9 +1,9 @@
 /**
  * Module dependencies
  */
-const db = require('../database/db');
-const TYPES = require('tedious').TYPES;
-const logHelper = require('../helpers/logHelper');
+import * as db from '../database/db';
+import { TYPES } from 'tedious';
+import * as logHelper from '../helpers/logHelper';
 
 const logger = logHelper.getLogger('application');
 

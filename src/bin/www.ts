@@ -3,7 +3,7 @@
 /**
  * Module dependencies
  */
-import * as app from '../app';
+import app from '../app';
 import * as http from 'http';
 import * as config from '../config/config';
 import * as logHelper from '../helpers/logHelper';
@@ -76,11 +76,15 @@ function onError(error: NodeJS.ErrnoException) {
 /**
  * Event listener for HTTP server "listening" event.
  */
-
 function onListening() {
-    var addr = server.address();
-    var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-    logger.info('Listening on ' + bind);
+    let bind = '<unknown>';
+    const addr = server.address();
+
+    if (addr) {
+        bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+    }
+
+    logger.info(`Listening on ${bind}`);
 }
 
 /**

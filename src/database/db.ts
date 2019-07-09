@@ -10,7 +10,7 @@ import { QueryParameter, RowResult } from '../types';
 const logger = logHelper.getLogger('application');
 
 const execQuery = function(query: string, params: Array<QueryParameter>) {
-    return new Promise((resolve, reject) => {
+    return new Promise<RowResult[]>((resolve, reject) => {
         const result: Array<RowResult> = [];
         pool.getConnection()
             .then(connector => {

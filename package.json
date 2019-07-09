@@ -18,6 +18,11 @@
     "winston-daily-rotate-file": "^3.9.0"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.1",
+    "@types/express": "^4.17.0",
+    "@types/morgan": "^1.7.35",
+    "@types/passport": "^1.0.0",
+    "@types/passport-http-bearer": "^1.0.33",
     "@types/tedious": "^4.0.0"
   }
 }

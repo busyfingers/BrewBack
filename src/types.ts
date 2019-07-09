@@ -1,5 +1,4 @@
 import { Connection, TediousType } from 'tedious';
-import { setConfigValues } from './config/config';
 
 export type PoolConfig = {
     size: number;
@@ -46,3 +45,8 @@ export type QueryParameter = {
 export interface RowResult {
     [name: string]: string;
 }
+
+export type Measurement = {
+    measuredAt: string;
+    value: string;
+};

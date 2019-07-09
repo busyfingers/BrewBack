@@ -1,13 +1,14 @@
 /**
  * Module dependencies
  */
-const express = require('express');
-const router = express.Router();
-const db = require('../database/db');
-const TYPES = require('tedious').TYPES;
-const passport = require('passport');
+import { Request, Response, Router } from 'express';
+const router = Router();
+import * as db from '../database/db';
+import { TYPES } from 'tedious';
+import passport from 'passport';
+import { Measurement } from '../types';
 
-router.get('/', passport.authenticate('bearer', { session: false }), async function(req, res) {
+router.get('/', passport.authenticate('bearer', { session: false }), async function(req: Request, res: Response) {
     try {
         let queryBase = 'SELECT Value, MeasuredAt FROM dbo.Temperature WHERE ';
         let queryData = prepareQuery(queryBase, req.query);
@@ -19,7 +20,7 @@ router.get('/', passport.authenticate('bearer', { session: false }), async funct
     }
 });
 
-router.post('/', passport.authenticate('bearer', { session: false }), async function(req, res) {
+router.post('/', passport.authenticate('bearer', { session: false }), async function(req: Request, res: Response) {
     try {
         const payloadIsValid = validatePayload(req.body);
         const measuredAt = new Date(req.body.measuredAt);
@@ -48,7 +49,7 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
     }
 });
 
-const prepareQuery = function(sql, querystring) {
+const prepareQuery = function(sql: string, querystring: any) {
     let params = [];
     if (Object.keys(querystring).length === 0 && querystring.constructor === Object) {
         sql += '1=1';
@@ -73,7 +74,7 @@ const prepareQuery = function(sql, querystring) {
     };
 };
 
-const validatePayload = function(data) {
+const validatePayload = function(data: Measurement) {
     if (Object.keys(data).length === 0 && data.constructor === Object) {
         return false;
     }
@@ -89,8 +90,8 @@ const validatePayload = function(data) {
     return true;
 };
 
-const isValidDate = function(date) {
-    return date instanceof Date && !isNaN(date);
+const isValidDate = function(date: Date) {
+    return date instanceof Date && !isNaN(date.getTime());
 };
 
-module.exports = router;
+export default router;

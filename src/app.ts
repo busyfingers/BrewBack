@@ -1,10 +1,10 @@
-import * as express from 'express';
-import * as cookieParser from 'cookie-parser';
-import * as logger from 'morgan';
-import * as passport from 'passport';
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import logger from 'morgan';
+import passport from 'passport';
 import { Strategy } from 'passport-http-bearer';
-import * as users from './src/models/users';
-import * as temperatureRouter from './src/routes/temperature';
+import * as users from './models/users';
+import * as temperatureRouter from './routes/temperature';
 
 passport.use(
     new Strategy(async (token: string, cb: Function) => {
@@ -27,9 +27,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/api/temperature', temperatureRouter);
+app.use('/api/temperature', temperatureRouter.default);
 app.all('*', function(req, res) {
     res.sendStatus(404);
 });
 
-module.exports = app;
+export default app;

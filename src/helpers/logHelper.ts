@@ -5,8 +5,6 @@ import * as winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import * as dateHelpers from './dateHelpers';
 
-const lib = {};
-
 const { combine, timestamp, printf } = winston.format;
 
 const myFormat = printf(({ level, message, timestamp }) => {
