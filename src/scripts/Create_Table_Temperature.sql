@@ -2,5 +2,6 @@ CREATE TABLE Temperature
 (
     Id INT PRIMARY KEY IDENTITY(1,1),
     Value DECIMAL(5,2) NOT NULL,
+    Location NVARCHAR(20),
     MeasuredAt DATETIME NOT NULL
 );

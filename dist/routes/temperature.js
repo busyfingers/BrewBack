@@ -29,7 +29,7 @@ const passport_1 = __importDefault(require("passport"));
 router.get('/', passport_1.default.authenticate('bearer', { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            let queryBase = 'SELECT Value, MeasuredAt FROM dbo.Temperature WHERE ';
+            let queryBase = 'SELECT Value, Location, MeasuredAt FROM dbo.Temperature WHERE ';
             let queryData = prepareQuery(queryBase, req.query);
             const result = yield db.execQuery(queryData.sqlQuery, queryData.parameters);
             res.send(result).status(200);
@@ -49,10 +49,11 @@ router.post('/', passport_1.default.authenticate('bearer', { session: false }), 
                 return;
             }
             if (payloadIsValid) {
-                const sql = `INSERT INTO dbo.Temperature (Value, MeasuredAt) VALUES (@Value, @MeasuredAt)`;
+                const sql = `INSERT INTO dbo.Temperature (Value, Location, MeasuredAt) VALUES (@Value, @Location, @MeasuredAt)`;
                 const params = [
                     // JS Number gets converted to int with TYPES.Decimal, so using string representation instead
                     { name: 'Value', type: tedious_1.TYPES.NVarChar, value: req.body.value.toFixed(2) },
+                    { name: 'Location', type: tedious_1.TYPES.NVarChar, value: req.body.location },
                     { name: 'MeasuredAt', type: tedious_1.TYPES.DateTime, value: measuredAt }
                 ];
                 yield db.execQuery(sql, params);
@@ -94,10 +95,10 @@ const validatePayload = function (data) {
     if (Object.keys(data).length === 0 && data.constructor === Object) {
         return false;
     }
-    if (!data.value || !data.measuredAt) {
+    if (!data.value || !data.measuredAt || !data.location) {
         return false;
     }
-    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number') {
+    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number' || typeof data.location !== 'string') {
         return false;
     }
     return true;

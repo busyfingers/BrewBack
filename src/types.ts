@@ -47,6 +47,7 @@ export interface RowResult {
 }
 
 export type Measurement = {
-    measuredAt: string;
     value: string;
+    location: string;
+    measuredAt: string;
 };

@@ -10,7 +10,7 @@ import { Measurement } from '../types';
 
 router.get('/', passport.authenticate('bearer', { session: false }), async function(req: Request, res: Response) {
     try {
-        let queryBase = 'SELECT Value, MeasuredAt FROM dbo.Temperature WHERE ';
+        let queryBase = 'SELECT Value, Location, MeasuredAt FROM dbo.Temperature WHERE ';
         let queryData = prepareQuery(queryBase, req.query);
         const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
 
@@ -31,10 +31,11 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
         }
 
         if (payloadIsValid) {
-            const sql = `INSERT INTO dbo.Temperature (Value, MeasuredAt) VALUES (@Value, @MeasuredAt)`;
+            const sql = `INSERT INTO dbo.Temperature (Value, Location, MeasuredAt) VALUES (@Value, @Location, @MeasuredAt)`;
             const params = [
                 // JS Number gets converted to int with TYPES.Decimal, so using string representation instead
                 { name: 'Value', type: TYPES.NVarChar, value: req.body.value.toFixed(2) },
+                { name: 'Location', type: TYPES.NVarChar, value: req.body.location },
                 { name: 'MeasuredAt', type: TYPES.DateTime, value: measuredAt }
             ];
 
@@ -79,11 +80,11 @@ const validatePayload = function(data: Measurement) {
         return false;
     }
 
-    if (!data.value || !data.measuredAt) {
+    if (!data.value || !data.measuredAt || !data.location) {
         return false;
     }
 
-    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number') {
+    if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number' || typeof data.location !== 'string') {
         return false;
     }
 
