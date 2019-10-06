@@ -6,7 +6,7 @@ let poolConfig = {} as PoolConfig;
 let databaseConfig = {} as DatabaseConfig;
 
 const setConfigValues = function() {
-    const values = JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json')).toString());
+    const values = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json')).toString());
     poolConfig.size = values.dbPoolSize;
     poolConfig.getTimeout = values.dbPoolGetTimeout;
     poolConfig.retryInterval = values.dbPoolRetryInterval;

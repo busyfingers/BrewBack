@@ -8,6 +8,8 @@ import { TYPES } from 'tedious';
 import passport from 'passport';
 import { Measurement } from '../types';
 
+// TODO: Move most of this logic to a model file for "temperature"
+
 router.get('/', passport.authenticate('bearer', { session: false }), async function(req: Request, res: Response) {
     try {
         let queryBase = 'SELECT Value, Location, MeasuredAt FROM dbo.Temperature WHERE ';

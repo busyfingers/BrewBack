@@ -18,13 +18,13 @@ then
 fi
 
 # Copy files to deploy folder
-cp -r bin deploy/BrewBack
-cp -r config/config.js deploy/BrewBack/config
-cp -r database deploy/BrewBack
-cp -r helpers deploy/BrewBack
-cp -r models deploy/BrewBack
-cp -r routes deploy/BrewBack
-cp -r app.js deploy/BrewBack
+cp -r dist/bin deploy/BrewBack
+cp -r dist/config/config.js deploy/BrewBack/config
+cp -r dist/database deploy/BrewBack
+cp -r dist/helpers deploy/BrewBack
+cp -r dist/models deploy/BrewBack
+cp -r dist/routes deploy/BrewBack
+cp -r dist/app.js deploy/BrewBack
 cp -r package*.json deploy/BrewBack
 
 # Copy files to server
