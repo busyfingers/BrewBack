@@ -3,13 +3,8 @@
  */
 import * as winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import * as dateHelpers from './dateHelpers';
 
 const { combine, timestamp, printf } = winston.format;
-
-const myFormat = printf(({ level, message, timestamp }) => {
-    return `${timestamp} [${level.toUpperCase()}]: ${message}`;
-});
 
 const getLogger = function(name: string) {
     const rotationTransport = new DailyRotateFile({
@@ -22,7 +17,12 @@ const getLogger = function(name: string) {
 
     return winston.createLogger({
         level: 'debug',
-        format: combine(timestamp({ format: dateHelpers.getCurrentTimeStamp() }), myFormat), // TODO: getCurrentTimeStamp -> getCurrentTimeStamp()   OK?
+        format: combine(
+            timestamp({
+                format: 'YYYY-MM-DD HH:mm:ss'
+            }),
+            printf(info => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`)
+        ),
         defaultMeta: { service: 'user-service' },
         transports: [rotationTransport, new winston.transports.Console()]
     });
