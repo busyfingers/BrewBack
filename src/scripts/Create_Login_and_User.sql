@@ -13,3 +13,9 @@ GO
 
 GRANT SELECT ON dbo.Users TO bb_measurements
 GO
+
+GRANT SELECT ON dbo.Sensors TO bb_measurements
+GO
+
+GRANT SELECT ON dbo.Fermentors TO bb_measurements
+GO
