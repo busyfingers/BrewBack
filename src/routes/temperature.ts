@@ -19,9 +19,9 @@ router.get('/', passport.authenticate('bearer', { session: false }), async funct
     let queryData = prepareQuery(queryBase, req.query);
     const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
 
-    res.send(result).status(200);
+    res.status(200).send(result);
   } catch (err) {
-    res.send(err).status(500);
+    res.status(500).send(err);
   }
 });
 
@@ -55,7 +55,7 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
       res.sendStatus(400);
     }
   } catch (err) {
-    res.send(err).status(500);
+    res.status(500).send(err);
   }
 });
 
@@ -76,8 +76,6 @@ const prepareQuery = function (sql: string, querystring: any) {
     }
     sql += whereClause.join(' AND ');
   }
-
-  console.log(sql);
 
   sql += ' ORDER BY MeasuredAt';
 
