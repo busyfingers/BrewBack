@@ -19,3 +19,9 @@ GO
 
 GRANT SELECT ON dbo.Fermentors TO bb_measurements
 GO
+
+GRANT SELECT ON dbo.Batches TO bb_measurements
+GO
+
+GRANT INSERT ON dbo.Batches TO bb_measurements
+GO
