@@ -28,6 +28,6 @@ cp -r dist/app.js deploy/BrewBack
 cp -r package*.json deploy/BrewBack
 
 # Copy files to server
-scp -r deploy/BrewBack 192.168.1.249:/home/niklas
+scp -r deploy/BrewBack 192.168.1.75:/home/niklas
 # Install packages
-ssh 192.168.1.249 npm install --prefix /home/niklas/BrewBack
+ssh 192.168.1.75 npm install --prefix /home/niklas/BrewBack
