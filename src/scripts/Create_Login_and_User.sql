@@ -25,3 +25,6 @@ GO
 
 GRANT INSERT ON dbo.Batches TO bb_measurements
 GO
+
+GRANT UPDATE ON dbo.Batches TO bb_measurements
+GO
