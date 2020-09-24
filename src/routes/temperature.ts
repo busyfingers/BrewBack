@@ -1,6 +1,3 @@
-/**
- * Module dependencies
- */
 import { Request, Response, Router } from 'express';
 const router = Router();
 import * as db from '../database/db';
@@ -12,11 +9,14 @@ import { Measurement } from '../types';
 
 router.get('/', passport.authenticate('bearer', { session: false }), async function (req: Request, res: Response) {
   try {
-    let queryBase = `SELECT T.Value, T.Location, T.MeasuredAt, S.Name AS 'Sensor', F.Name AS 'Fermentor' `;
-    queryBase +=
-      'FROM dbo.Temperature T LEFT JOIN dbo.Sensors S ON T.SensorId = S.Id LEFT JOIN dbo.Fermentors F ON T.FermentorId = F.Id ';
+    let queryBase = `SELECT T.Value, T.Location, T.MeasuredAt, S.Name AS 'Sensor', F.Name AS 'Fermentor'
+    FROM dbo.Temperature T
+    LEFT JOIN dbo.Sensors S ON T.SensorId = S.Id
+    LEFT JOIN dbo.Fermentors F ON T.FermentorId = F.Id
+    LEFT JOIN dbo.Batches B
+    ON (T.MeasuredAt >= B.FermentationStart) AND (T.MeasuredAt <= ISNULL(B.FermentationEnd, '2999-01-01 00:00:00')) `;
 
-    let queryData = prepareQuery(queryBase, req.query);
+    const queryData = prepareQuery(queryBase, req.query);
     const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
 
     res.status(200).send(result);
@@ -66,6 +66,12 @@ const prepareQuery = function (sql: string, querystring: any) {
   } else {
     sql += 'WHERE ';
     let whereClause = [];
+
+    if (querystring.batchNo) {
+      whereClause.push('B.BatchNo = @batchNo');
+      whereClause.push('(T.FermentorId = B.FermentorId OR T.FermentorId IS NULL)');
+      params.push({ name: 'batchNo', type: TYPES.Int, value: querystring.batchNo });
+    }
     if (querystring.from) {
       whereClause.push('MeasuredAt >= @from');
       params.push({ name: 'from', type: TYPES.NVarChar, value: querystring.from });
