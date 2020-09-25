@@ -67,10 +67,10 @@ const prepareQuery = function (sql: string, querystring: any) {
     sql += 'WHERE ';
     let whereClause = [];
 
-    if (querystring.batchNo) {
-      whereClause.push('B.BatchNo = @batchNo');
+    if (querystring.batchId) {
+      whereClause.push('B.Id = @batchId');
       whereClause.push('(T.FermentorId = B.FermentorId OR T.FermentorId IS NULL)');
-      params.push({ name: 'batchNo', type: TYPES.Int, value: querystring.batchNo });
+      params.push({ name: 'batchId', type: TYPES.Int, value: querystring.batchId });
     }
     if (querystring.from) {
       whereClause.push('MeasuredAt >= @from');
