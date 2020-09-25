@@ -10,7 +10,7 @@ const logger = logHelper.getLogger('application');
 
 router.get('/', passport.authenticate('bearer', { session: false }), async function (req: Request, res: Response) {
   try {
-    const sql = 'SELECT Id, BatchNo, RecipeName FROM dbo.Batches';
+    const sql = 'SELECT Id, BatchNo, RecipeName, FermentationStart, FermentationEnd FROM dbo.Batches';
     const result = await db.execQuery(sql, []);
 
     res.status(200).send(result);
