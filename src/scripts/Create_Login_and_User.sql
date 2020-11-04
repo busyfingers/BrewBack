@@ -37,3 +37,6 @@ GO
 
 GRANT UPDATE ON dbo.FermentationProfiles TO bb_measurements
 GO
+
+GRANT DELETE ON dbo.FermentationProfiles TO bb_measurements
+GO
