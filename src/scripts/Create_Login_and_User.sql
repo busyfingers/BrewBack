@@ -28,3 +28,12 @@ GO
 
 GRANT UPDATE ON dbo.Batches TO bb_measurements
 GO
+
+GRANT SELECT ON dbo.FermentationProfiles TO bb_measurements
+GO
+
+GRANT INSERT ON dbo.FermentationProfiles TO bb_measurements
+GO
+
+GRANT UPDATE ON dbo.FermentationProfiles TO bb_measurements
+GO

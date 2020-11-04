@@ -7,6 +7,7 @@ import { Strategy } from 'passport-http-bearer';
 import * as users from './models/users';
 import * as temperatureRouter from './routes/temperature';
 import * as batchRouter from './routes/batchdata';
+import * as fermProfileRouter from './routes/fermentationProfile';
 
 passport.use(
   new Strategy(async (token: string, cb: Function) => {
@@ -32,6 +33,7 @@ app.use(cookieParser());
 
 app.use('/api/temperature', temperatureRouter.default);
 app.use('/api/batchdata', batchRouter.default);
+app.use('/api/fermentationProfile', fermProfileRouter.default);
 app.all('*', function (req, res) {
   res.sendStatus(404);
 });
