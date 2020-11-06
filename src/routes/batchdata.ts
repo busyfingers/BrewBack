@@ -51,6 +51,9 @@ router.post('/', async function (req: Request, res: Response) {
     const fermentationStart = new Date(req.body.fermentationStartDate);
     const fermentationEnd = typeof req.body.bottlingDate === 'number' ? new Date(req.body.bottlingDate) : null;
 
+    fermentationStart.setHours(0, 0, 0, 0);
+    fermentationEnd?.setHours(23, 59, 0, 0);
+
     result = await getBatch(req, fermentorId);
 
     await upsertBatchData(req, fermentorId, result.length > 0, fermentationStart, fermentationEnd);
@@ -155,7 +158,6 @@ const upsertFermentationProfile = async function (
     const res = await getFermentationProfile(batchId);
 
     if (res.length > 0) {
-      console.log(`Got ${res.length} rows when checking for existing ferm prof. Deleting...`);
       await clearFermentationProfileForBatch(batchId);
     }
 
