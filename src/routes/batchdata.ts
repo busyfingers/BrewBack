@@ -142,17 +142,17 @@ const upsertFermentationProfile = async function (
       const stepTime = parseInt(element.stepTime);
 
       let firstDate = new Date(first_day);
-      firstDate.setHours(0, 0, 0, 0);
+      firstDate.setHours(12, 0, 0, 0);
       firstDate.setDate(firstDate.getDate() + days);
 
       let secondDate = new Date(first_day);
-      secondDate.setHours(0, 0, 0, 0);
+      secondDate.setHours(12, 0, 0, 0);
       secondDate.setDate(secondDate.getDate() + days + stepTime);
 
       profileData.push({ timePoint: firstDate, value: element.stepTemp.toFixed() });
       profileData.push({ timePoint: secondDate, value: element.stepTemp.toFixed() });
 
-      days = stepTime + 1;
+      days += stepTime;
     });
 
     const res = await getFermentationProfile(batchId);
