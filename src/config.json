@@ -1,0 +1,10 @@
+{
+  "dbServer": "",
+  "dbUser": "",
+  "dbPass": "",
+  "dbName": "",
+  "dbPoolSize": 5,
+  "dbPoolGetTimeout": 3000,
+  "dbPoolRetryInterval": 50,
+  "batchDataApiKey": ""
+}
