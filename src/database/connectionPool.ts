@@ -23,7 +23,7 @@ const initiateConnectionPool = async function () {
     });
     const poolItem = {
       connection: con,
-      status: READY,
+      status: READY
     };
     _pool.push(poolItem);
   }
@@ -115,7 +115,7 @@ const tryAtMost = async function (
   tries: number,
   executor: {
     (resolve: Function, reject: Function): void;
-    (resolve: (value?: Connection) => void, reject: (reason?: any) => void): void;
+    (resolve: (value: Connection) => void, reject: (reason?: any) => void): void;
   }
 ): Promise<Connection> {
   --tries;

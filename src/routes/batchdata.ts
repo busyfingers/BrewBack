@@ -9,16 +9,21 @@ import { FermProfileItem, RowResult } from '../types';
 
 const logger = logHelper.getLogger('application');
 
-router.get('/', passport.authenticate('bearer', { session: false }), async function (req: Request, res: Response) {
-  try {
-    const sql = 'SELECT Id, BatchNo, RecipeName, FermentationStart, FermentationEnd FROM dbo.Batches';
-    const result = await db.execQuery(sql, []);
+router.get(
+  '/',
+  passport.authenticate('bearer', { session: false }),
+  async function (req: Request, res: Response) {
+    try {
+      const sql =
+        'SELECT Id, BatchNo, RecipeName, FermentationStart, FermentationEnd FROM dbo.Batches';
+      const result = await db.execQuery(sql, []);
 
-    res.status(200).send(result);
-  } catch (err) {
-    res.status(500).send(err);
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(500).send(err);
+    }
   }
-});
+);
 
 /**
  * This route is POSTed to by Brewfather, which has no support for authentication. Therefore, the author in the request
@@ -49,7 +54,8 @@ router.post('/', async function (req: Request, res: Response) {
 
     const fermentorId = result[0].Id;
     const fermentationStart = new Date(req.body.fermentationStartDate);
-    const fermentationEnd = typeof req.body.bottlingDate === 'number' ? new Date(req.body.bottlingDate) : null;
+    const fermentationEnd =
+      typeof req.body.bottlingDate === 'number' ? new Date(req.body.bottlingDate) : null;
 
     fermentationStart.setHours(0, 0, 0, 0);
     fermentationEnd?.setHours(23, 59, 0, 0);
@@ -60,8 +66,9 @@ router.post('/', async function (req: Request, res: Response) {
     await upsertFermentationProfile(req, fermentorId, result, fermentationStart);
 
     res.status(200).send(); // res.sendStatus(200) makes Brewfather think the request failed
-  } catch (err) {
-    logger.error(err);
+  } catch (error) {
+    let message = 'Unknown Error';
+    if (error instanceof Error) message = error.message;
     res.sendStatus(400);
   }
 });
