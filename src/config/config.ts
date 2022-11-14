@@ -16,12 +16,12 @@ const setConfigValues = function () {
     type: 'default',
     options: {
       userName: values.dbUser,
-      password: values.dbPass,
-    },
+      password: values.dbPass
+    }
   };
   databaseConfig.options = {
     database: values.dbName,
-    useUTC: false,
+    useUTC: false
   };
   batchDataApiKey = values.batchDataApiKey;
 };
@@ -30,7 +30,7 @@ const getDatabaseConfig = function () {
   return {
     server: databaseConfig.server,
     authentication: databaseConfig.authentication,
-    options: databaseConfig.options,
+    options: databaseConfig.options
   };
 };
 
