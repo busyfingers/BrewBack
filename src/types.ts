@@ -1,4 +1,4 @@
-import { Connection, TediousType } from 'tedious';
+import { Connection, TYPES } from 'tedious';
 
 export type PoolConfig = {
   size: number;
@@ -9,7 +9,7 @@ export type PoolConfig = {
 export type DatabaseConfig = {
   server: string;
   authentication: {
-    type: string;
+    type: 'default';
     options: {
       userName: string;
       password: string;
@@ -33,7 +33,7 @@ export type Connector = {
 
 export type QueryParameter = {
   name: string;
-  type: TediousType;
+  type: typeof TYPES[keyof typeof TYPES];
   value: any;
 };
 

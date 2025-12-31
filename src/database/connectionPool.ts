@@ -90,8 +90,12 @@ const connect = function (resolve: Function, reject: Function) {
 const resolveDbConnection = function () {
   return new Promise<Connection>((resolve, reject) => {
     tryAtMost(3, connect)
-      .then((connection: Connection) => {
-        resolve(connection);
+      .then((connection: Connection | undefined) => {
+        if (connection) {
+          resolve(connection);
+        } else {
+          reject(new Error('Failed to connect to database after 3 attempts'));
+        }
       })
       .catch((err: any) => {
         logger.error(`Unable to connect to database: ${err}`);
@@ -117,10 +121,10 @@ const tryAtMost = async function (
     (resolve: Function, reject: Function): void;
     (resolve: (value?: Connection) => void, reject: (reason?: any) => void): void;
   }
-): Promise<Connection> {
+): Promise<Connection | undefined> {
   --tries;
   try {
-    return new Promise(executor);
+    return await new Promise(executor);
   } catch (err) {
     return await (tries > 0 ? tryAtMost(tries, executor) : Promise.reject(err));
   }

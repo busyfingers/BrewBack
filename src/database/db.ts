@@ -44,7 +44,7 @@ const execQuery = function(query: string, params: Array<QueryParameter>) {
 
                 request.on('row', function(columns) {
                     const row: RowResult = {}; // as ResultRow;
-                    columns.forEach(function(column) {
+                    columns.forEach(function(column: { value: any; metadata: { colName: string } }) {
                         if (column.value !== null) {
                             // Datetimes are stored in local time, built-in toString() converts them to UTC
                             if (Object.prototype.toString.call(column.value) === '[object Date]') {
