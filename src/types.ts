@@ -31,9 +31,9 @@ export interface RowResult {
 }
 
 export type Measurement = {
-  value: string;
+  value: number;
   location: string;
-  measuredAt: string;
+  measuredAt: number;
 };
 
 export type FermProfileItem = {

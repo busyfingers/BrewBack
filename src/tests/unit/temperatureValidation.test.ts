@@ -1,30 +1,10 @@
-// Unit tests for temperature route validation
-
-// Replicate the validation functions from temperature.ts for testing
-const validatePayload = function (data: any) {
-  if (Object.keys(data).length === 0 && data.constructor === Object) {
-    return false;
-  }
-
-  if (!data.value || !data.measuredAt || !data.location) {
-    return false;
-  }
-
-  if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number' || typeof data.location !== 'string') {
-    return false;
-  }
-
-  return true;
-};
-
-const isValidDate = function (date: Date) {
-  return date instanceof Date && !isNaN(date.getTime());
-};
+import { validatePayload, isValidDate } from '../../helpers/validators';
+import { Measurement } from '../../types';
 
 describe('temperature route validation', () => {
   describe('validatePayload', () => {
     it('should return true for valid payload', () => {
-      const payload = {
+      const payload: Measurement = {
         value: 20.5,
         measuredAt: Date.now(),
         location: 'fermenter',
@@ -33,7 +13,7 @@ describe('temperature route validation', () => {
     });
 
     it('should return false for empty object', () => {
-      const payload = {};
+      const payload = {} as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -41,7 +21,7 @@ describe('temperature route validation', () => {
       const payload = {
         measuredAt: Date.now(),
         location: 'fermenter',
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -49,7 +29,7 @@ describe('temperature route validation', () => {
       const payload = {
         value: 20.5,
         location: 'fermenter',
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -57,7 +37,7 @@ describe('temperature route validation', () => {
       const payload = {
         value: 20.5,
         measuredAt: Date.now(),
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -66,7 +46,7 @@ describe('temperature route validation', () => {
         value: '20.5',
         measuredAt: Date.now(),
         location: 'fermenter',
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -75,7 +55,7 @@ describe('temperature route validation', () => {
         value: 20.5,
         measuredAt: '2025-01-01',
         location: 'fermenter',
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
 
@@ -84,7 +64,7 @@ describe('temperature route validation', () => {
         value: 20.5,
         measuredAt: Date.now(),
         location: 123,
-      };
+      } as unknown as Measurement;
       expect(validatePayload(payload)).toBe(false);
     });
   });

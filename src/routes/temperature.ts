@@ -2,7 +2,8 @@ import { Request, Response, Router } from 'express';
 const router = Router();
 import * as db from '../database/db';
 import passport from 'passport';
-import { Measurement, QueryParameter } from '../types';
+import { QueryParameter } from '../types';
+import { validatePayload, isValidDate } from '../helpers/validators';
 
 // TODO: Move most of this logic to a model file for "temperature"
 
@@ -87,26 +88,6 @@ const prepareQuery = function (sql: string, querystring: any) {
     sqlQuery: sql,
     parameters: params,
   };
-};
-
-const validatePayload = function (data: Measurement) {
-  if (Object.keys(data).length === 0 && data.constructor === Object) {
-    return false;
-  }
-
-  if (!data.value || !data.measuredAt || !data.location) {
-    return false;
-  }
-
-  if (typeof data.value !== 'number' || typeof data.measuredAt !== 'number' || typeof data.location !== 'string') {
-    return false;
-  }
-
-  return true;
-};
-
-const isValidDate = function (date: Date) {
-  return date instanceof Date && !isNaN(date.getTime());
 };
 
 export default router;

@@ -5,6 +5,7 @@ import * as config from '../config/config';
 import passport from 'passport';
 import * as logHelper from '../helpers/logHelper';
 import { FermProfileItem, RowResult, QueryParameter } from '../types';
+import { validateRequest } from '../helpers/validators';
 
 const logger = logHelper.getLogger('application');
 
@@ -26,7 +27,7 @@ router.get('/', passport.authenticate('bearer', { session: false }), async funct
  */
 router.post('/', async function (req: Request, res: Response) {
   try {
-    if (!validateRequest(req)) {
+    if (!validateRequest(req.body)) {
       logger.error('Invalid request body. Missing properties or wrong type(s)');
       return res.sendStatus(400);
     }
@@ -182,34 +183,6 @@ const upsertFermentationProfile = async function (
       await db.execNonQuery(sql, params);
     }
   }
-};
-
-const validateRequest = function (req: Request) {
-  if (Object.keys(req.body).length === 0 && req.body.constructor === Object) {
-    return false;
-  }
-
-  if (
-    !req.body.batchNo ||
-    !req.body.recipe.name ||
-    !req.body.recipe.author ||
-    !req.body.brewer ||
-    !req.body.fermentationStartDate
-  ) {
-    return false;
-  }
-
-  if (
-    typeof req.body.batchNo !== 'number' ||
-    typeof req.body.recipe.name !== 'string' ||
-    typeof req.body.recipe.author !== 'string' ||
-    typeof req.body.brewer !== 'string' ||
-    typeof req.body.fermentationStartDate !== 'number'
-  ) {
-    return false;
-  }
-
-  return true;
 };
 
 export default router;
