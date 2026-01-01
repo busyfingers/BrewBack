@@ -1,7 +1,9 @@
-import { Connection } from 'tedious';
+import Database from 'better-sqlite3';
 import * as config from '../config/config';
 import { PoolItem, Connector } from '../types';
 import * as logHelper from '../helpers/logHelper';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const READY = 0;
 const BUSY = 1;
@@ -15,22 +17,37 @@ const initiateConnectionPool = async function () {
     return; // we don't want to initialize more than once
   }
 
+  const dbConfig = config.getDatabaseConfig();
+  // Resolve path relative to the project root where config.json is located
+  const dbPath = path.resolve(__dirname, '../../src/', dbConfig.databasePath);
+
+  // Ensure the database file exists
+  if (!fs.existsSync(dbPath)) {
+    logger.info(`Creating new SQLite database at: ${dbPath}`);
+  }
+
   for (let i = 0; i < size; i++) {
-    const con = await resolveDbConnection().catch((err) => {
-      const msg = `Error connecting to db: ${err}`;
+    try {
+      const db = new Database(dbPath);
+      // Enable foreign keys
+      db.pragma('foreign_keys = ON');
+      const poolItem = {
+        connection: db,
+        status: READY,
+      };
+      _pool.push(poolItem);
+    } catch (err) {
+      const msg = `Error connecting to SQLite database: ${err}`;
       logger.error(msg);
       throw new Error(msg);
-    });
-    const poolItem = {
-      connection: con,
-      status: READY,
-    };
-    _pool.push(poolItem);
+    }
   }
 
   if (_pool.length === 0) {
     throw new Error('Unable to initiate connection pool!');
   }
+
+  logger.info(`SQLite connection pool initialized with ${_pool.length} connections`);
 };
 
 const getConnection = function () {
@@ -54,54 +71,15 @@ const getConnection = function () {
 
       if (attempts >= limit) {
         clearInterval(interval);
-        return reject();
+        return reject(new Error('Connection pool timeout - no available connections'));
       }
     }, config.poolConfig.retryInterval);
   });
 };
 
 const releaseConnection = function (id: number) {
-  // Call this fire-and-forget style since waiting for the release slows down processing
-  _pool[id].connection.reset(async (err) => {
-    if (err) {
-      logger.error(`Error resetting connection ${id}: ${err}`);
-      // _pool[id].connection = await connectToDb().catch(err => {
-      // logger.error(`Error connecting to db: ${err}`);
-      // });
-    }
-    _pool[id].status = READY;
-  });
-};
-
-const connect = function (resolve: Function, reject: Function) {
-  const dbConfig = config.getDatabaseConfig();
-  const connection = new Connection(dbConfig);
-
-  connection.on('connect', function (err) {
-    if (err) {
-      reject(err);
-    } else {
-      logger.info('Connected to DB');
-      resolve(connection);
-    }
-  });
-};
-
-const resolveDbConnection = function () {
-  return new Promise<Connection>((resolve, reject) => {
-    tryAtMost(3, connect)
-      .then((connection: Connection | undefined) => {
-        if (connection) {
-          resolve(connection);
-        } else {
-          reject(new Error('Failed to connect to database after 3 attempts'));
-        }
-      })
-      .catch((err: any) => {
-        logger.error(`Unable to connect to database: ${err}`);
-        reject(err);
-      });
-  });
+  // SQLite connections don't need reset, just mark as ready
+  _pool[id].status = READY;
 };
 
 const findAvailableConnector = function (): Connector | null {
@@ -112,22 +90,6 @@ const findAvailableConnector = function (): Connector | null {
     }
   }
   return null;
-};
-
-// TODO: Merge function "connect" into this, no need for a generic function that does retries
-const tryAtMost = async function (
-  tries: number,
-  executor: {
-    (resolve: Function, reject: Function): void;
-    (resolve: (value?: Connection) => void, reject: (reason?: any) => void): void;
-  }
-): Promise<Connection | undefined> {
-  --tries;
-  try {
-    return await new Promise(executor);
-  } catch (err) {
-    return await (tries > 0 ? tryAtMost(tries, executor) : Promise.reject(err));
-  }
 };
 
 export { initiateConnectionPool };

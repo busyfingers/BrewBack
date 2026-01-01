@@ -5,14 +5,9 @@
  */
 import app from '../app';
 import * as http from 'http';
-import * as config from '../config/config';
 import * as logHelper from '../helpers/logHelper';
-import * as pool from '../database/connectionPool';
 
 const logger = logHelper.getLogger('application');
-
-config.setConfigValues();
-pool.initiateConnectionPool();
 
 /**
  * Get port from environment and store in Express.

@@ -1,20 +1,19 @@
 import { Request, Response, Router } from 'express';
 const router = Router();
 import * as db from '../database/db';
-import { TYPES } from 'tedious';
 import passport from 'passport';
-import { Measurement } from '../types';
+import { Measurement, QueryParameter } from '../types';
 
 // TODO: Move most of this logic to a model file for "temperature"
 
 router.get('/', passport.authenticate('bearer', { session: false }), async function (req: Request, res: Response) {
   try {
     let queryBase = `SELECT T.Value, T.Location, T.MeasuredAt, S.Name AS 'Sensor', F.Name AS 'Fermentor'
-    FROM dbo.Temperature T
-    LEFT JOIN dbo.Sensors S ON T.SensorId = S.Id
-    LEFT JOIN dbo.Fermentors F ON T.FermentorId = F.Id
-    LEFT JOIN dbo.Batches B
-    ON (T.MeasuredAt >= B.FermentationStart) AND (T.MeasuredAt <= ISNULL(B.FermentationEnd, '2999-01-01 00:00:00')) `;
+    FROM Temperature T
+    LEFT JOIN Sensors S ON T.SensorId = S.Id
+    LEFT JOIN Fermentors F ON T.FermentorId = F.Id
+    LEFT JOIN Batches B
+    ON (T.MeasuredAt >= B.FermentationStart) AND (T.MeasuredAt <= IFNULL(B.FermentationEnd, '2999-01-01 00:00:00')) `;
 
     const queryData = prepareQuery(queryBase, req.query);
     const result = await db.execQuery(queryData.sqlQuery, queryData.parameters);
@@ -37,18 +36,17 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
 
     if (payloadIsValid) {
       const sql =
-        'INSERT INTO dbo.Temperature (Value, Location, MeasuredAt, SensorId, FermentorId)' +
-        `VALUES (@Value, @Location, @MeasuredAt, (SELECT Id From dbo.Sensors WHERE Name = @SensorName), (SELECT Id From dbo.Fermentors WHERE Name = @FermentorName))`;
-      const params = [
-        // JS Number gets converted to int with TYPES.Decimal, so using string representation instead
-        { name: 'Value', type: TYPES.NVarChar, value: req.body.value.toFixed(2) },
-        { name: 'Location', type: TYPES.NVarChar, value: req.body.location },
-        { name: 'MeasuredAt', type: TYPES.DateTime, value: measuredAt },
-        { name: 'SensorName', type: TYPES.NVarChar, value: req.body.sensorName },
-        { name: 'FermentorName', type: TYPES.NVarChar, value: req.body.fermentorName },
+        'INSERT INTO Temperature (Value, Location, MeasuredAt, SensorId, FermentorId)' +
+        `VALUES (?, ?, ?, (SELECT Id From Sensors WHERE Name = ?), (SELECT Id From Fermentors WHERE Name = ?))`;
+      const params: QueryParameter[] = [
+        { name: 'Value', type: 'string', value: req.body.value.toFixed(2) },
+        { name: 'Location', type: 'string', value: req.body.location },
+        { name: 'MeasuredAt', type: 'string', value: measuredAt.toISOString() },
+        { name: 'SensorName', type: 'string', value: req.body.sensorName },
+        { name: 'FermentorName', type: 'string', value: req.body.fermentorName },
       ];
 
-      await db.execQuery(sql, params);
+      await db.execNonQuery(sql, params);
 
       res.sendStatus(200);
     } else {
@@ -60,7 +58,7 @@ router.post('/', passport.authenticate('bearer', { session: false }), async func
 });
 
 const prepareQuery = function (sql: string, querystring: any) {
-  let params = [];
+  let params: QueryParameter[] = [];
   if (Object.keys(querystring).length === 0 && querystring.constructor === Object) {
     sql += 'WHERE 1=1';
   } else {
@@ -68,17 +66,17 @@ const prepareQuery = function (sql: string, querystring: any) {
     let whereClause = [];
 
     if (querystring.batchId) {
-      whereClause.push('B.Id = @batchId');
+      whereClause.push('B.Id = ?');
       whereClause.push('(T.FermentorId = B.FermentorId OR T.FermentorId IS NULL)');
-      params.push({ name: 'batchId', type: TYPES.Int, value: querystring.batchId });
+      params.push({ name: 'batchId', type: 'number', value: querystring.batchId });
     }
     if (querystring.from) {
-      whereClause.push('MeasuredAt >= @from');
-      params.push({ name: 'from', type: TYPES.NVarChar, value: querystring.from });
+      whereClause.push('MeasuredAt >= ?');
+      params.push({ name: 'from', type: 'string', value: querystring.from });
     }
     if (querystring.to) {
-      whereClause.push('MeasuredAt <= @to');
-      params.push({ name: 'to', type: TYPES.NVarChar, value: querystring.to });
+      whereClause.push('MeasuredAt <= ?');
+      params.push({ name: 'to', type: 'string', value: querystring.to });
     }
     sql += whereClause.join(' AND ');
   }

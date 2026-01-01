@@ -8,6 +8,9 @@ import * as users from './models/users';
 import * as temperatureRouter from './routes/temperature';
 import * as batchRouter from './routes/batchdata';
 import * as fermProfileRouter from './routes/fermentationProfile';
+import * as pool from './database/connectionPool';
+import { initializeDatabase } from './database/schema';
+import * as config from './config/config';
 
 passport.use(
   new Strategy(async (token: string, cb: Function) => {
@@ -37,5 +40,29 @@ app.use('/api/fermentationProfile', fermProfileRouter.default);
 app.all('*', function (req, res) {
   res.sendStatus(404);
 });
+
+// Initialize database and pool
+async function startServer() {
+  try {
+    // Set config values
+    config.setConfigValues();
+
+    // Initialize connection pool
+    await pool.initiateConnectionPool();
+
+    // Get first connection to initialize schema
+    const connector = await pool.getConnection();
+    initializeDatabase(connector.connection);
+    pool.releaseConnection(connector.id);
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
 
 export default app;

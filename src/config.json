@@ -1,8 +1,5 @@
 {
-  "dbServer": "",
-  "dbUser": "",
-  "dbPass": "",
-  "dbName": "",
+  "dbPath": "./brewback.db",
   "dbPoolSize": 5,
   "dbPoolGetTimeout": 3000,
   "dbPoolRetryInterval": 50,

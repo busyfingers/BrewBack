@@ -7,30 +7,17 @@ let databaseConfig = {} as DatabaseConfig;
 let batchDataApiKey = '';
 
 const setConfigValues = function () {
-  const values = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json')).toString());
+  const values = JSON.parse(fs.readFileSync(path.join(__dirname, '../../src/config.json')).toString());
   poolConfig.size = values.dbPoolSize;
   poolConfig.getTimeout = values.dbPoolGetTimeout;
   poolConfig.retryInterval = values.dbPoolRetryInterval;
-  databaseConfig.server = values.dbServer;
-  databaseConfig.authentication = {
-    type: 'default',
-    options: {
-      userName: values.dbUser,
-      password: values.dbPass,
-    },
-  };
-  databaseConfig.options = {
-    database: values.dbName,
-    useUTC: false,
-  };
+  databaseConfig.databasePath = values.dbPath;
   batchDataApiKey = values.batchDataApiKey;
 };
 
 const getDatabaseConfig = function () {
   return {
-    server: databaseConfig.server,
-    authentication: databaseConfig.authentication,
-    options: databaseConfig.options,
+    databasePath: databaseConfig.databasePath,
   };
 };
 

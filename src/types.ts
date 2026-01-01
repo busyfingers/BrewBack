@@ -1,4 +1,4 @@
-import { Connection, TYPES } from 'tedious';
+import Database from 'better-sqlite3';
 
 export type PoolConfig = {
   size: number;
@@ -7,43 +7,27 @@ export type PoolConfig = {
 };
 
 export type DatabaseConfig = {
-  server: string;
-  authentication: {
-    type: 'default';
-    options: {
-      userName: string;
-      password: string;
-    };
-  };
-  options: {
-    database: string;
-    useUTC: boolean;
-  };
+  databasePath: string;
 };
 
 export type PoolItem = {
-  connection: Connection;
+  connection: Database.Database;
   status: number;
 };
 
 export type Connector = {
   id: number;
-  connection: Connection;
+  connection: Database.Database;
 };
 
 export type QueryParameter = {
   name: string;
-  type: typeof TYPES[keyof typeof TYPES];
+  type: 'string' | 'number' | 'boolean' | 'null';
   value: any;
 };
 
-// https://stackoverflow.com/questions/30840596/how-to-do-dynamic-objects-in-typescript
-// export interface IValue {
-//     prop: any;
-// }
-
 export interface RowResult {
-  [name: string]: string;
+  [name: string]: string | number | boolean | null;
 }
 
 export type Measurement = {

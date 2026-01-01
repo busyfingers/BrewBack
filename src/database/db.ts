@@ -1,7 +1,6 @@
 /**
  * Module dependencies
  */
-import { Request } from 'tedious';
 import * as logHelper from '../helpers/logHelper';
 import { getLocalISOString } from '../helpers/dateHelpers';
 import * as pool from './connectionPool';
@@ -9,60 +8,139 @@ import { QueryParameter, RowResult } from '../types';
 
 const logger = logHelper.getLogger('application');
 
-const execQuery = function(query: string, params: Array<QueryParameter>) {
-    return new Promise<RowResult[]>((resolve, reject) => {
-        const result: Array<RowResult> = [];
-        pool.getConnection()
-            .then(connector => {
-                const request = new Request(query, async function(err, rowCount, rows) {
-                    pool.releaseConnection(connector.id);
+// Convert QueryParameter array to values array for SQLite
+const getParamValues = function (params: Array<QueryParameter>): any[] {
+  return params.map((p) => p.value);
+};
 
-                    if (err) {
-                        logger.error(err);
-                        reject(err);
-                    } else {
-                        logger.info(`Query complete: '${query}'`);
-                        if (params && params.length > 0) {
-                            let msg = params.map(p => {
-                                if (p.name !== 'Token') {
-                                    // Don't log tokens
-                                    return `${p.name}=${p.value}`;
-                                }
-                            });
-                            logger.info(msg.join(', '));
-                        }
-                        logger.info(`Rows: ${rowCount}`);
-                        resolve(result);
-                    }
-                });
+// Get parameter types for logging
+const getParamLogString = function (params: Array<QueryParameter>): string {
+  if (!params || params.length === 0) return '';
+  return params
+    .map((p) => {
+      if (p.name !== 'Token') {
+        return `${p.name}=${p.value}`;
+      }
+      return `${p.name}=[REDACTED]`;
+    })
+    .join(', ');
+};
 
-                if (params) {
-                    params.forEach(param => {
-                        request.addParameter(param.name, param.type, param.value);
-                    });
-                }
+// Check if value is a Date object
+const isDate = (value: any): value is Date => {
+  return value instanceof Date;
+};
 
-                request.on('row', function(columns) {
-                    const row: RowResult = {}; // as ResultRow;
-                    columns.forEach(function(column: { value: any; metadata: { colName: string } }) {
-                        if (column.value !== null) {
-                            // Datetimes are stored in local time, built-in toString() converts them to UTC
-                            if (Object.prototype.toString.call(column.value) === '[object Date]') {
-                                row[column.metadata.colName] = getLocalISOString(column.value);
-                            } else {
-                                row[column.metadata.colName] = column.value;
-                            }
-                        }
-                    });
-                    result.push(row);
-                });
+const execQuery = function (query: string, params: Array<QueryParameter>): Promise<RowResult[]> {
+  return new Promise<RowResult[]>((resolve, reject) => {
+    pool
+      .getConnection()
+      .then((connector) => {
+        try {
+          const values = getParamValues(params);
+          const stmt = connector.connection.prepare(query);
+          const rows = stmt.all(...values) as RowResult[];
 
-                connector.connection.execSql(request);
-            })
-            .catch(err => {
-                reject(err);
-            });
-    });
+          // Release connection immediately after query
+          pool.releaseConnection(connector.id);
+
+          // Transform results
+          const result: Array<RowResult> = rows.map((row) => {
+            const transformedRow: RowResult = {};
+            for (const key in row) {
+              const value = row[key];
+              // Datetimes are stored in local time, convert to ISO string
+              if (isDate(value)) {
+                transformedRow[key] = getLocalISOString(value);
+              } else {
+                transformedRow[key] = value;
+              }
+            }
+            return transformedRow;
+          });
+
+          logger.info(`Query complete: '${query}'`);
+          if (params && params.length > 0) {
+            logger.info(getParamLogString(params));
+          }
+          logger.info(`Rows: ${result.length}`);
+          resolve(result);
+        } catch (err: any) {
+          pool.releaseConnection(connector.id);
+          logger.error(err);
+          reject(err);
+        }
+      })
+      .catch((err) => {
+        logger.error(err);
+        reject(err);
+      });
+  });
+};
+
+const execNonQuery = function (query: string, params: Array<QueryParameter>): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    pool
+      .getConnection()
+      .then((connector) => {
+        try {
+          const values = getParamValues(params);
+          const stmt = connector.connection.prepare(query);
+          stmt.run(...values);
+
+          // Release connection immediately after query
+          pool.releaseConnection(connector.id);
+
+          logger.info(`Non-query complete: '${query}'`);
+          if (params && params.length > 0) {
+            logger.info(getParamLogString(params));
+          }
+          resolve();
+        } catch (err: any) {
+          pool.releaseConnection(connector.id);
+          logger.error(err);
+          reject(err);
+        }
+      })
+      .catch((err) => {
+        logger.error(err);
+        reject(err);
+      });
+  });
+};
+
+const execInsert = function (query: string, params: Array<QueryParameter>): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    pool
+      .getConnection()
+      .then((connector) => {
+        try {
+          const values = getParamValues(params);
+          const stmt = connector.connection.prepare(query);
+          const result = stmt.run(...values);
+
+          // Release connection immediately after query
+          pool.releaseConnection(connector.id);
+
+          logger.info(`Insert complete: '${query}'`);
+          if (params && params.length > 0) {
+            logger.info(getParamLogString(params));
+          }
+          // Return the last insert row id
+          resolve(result.lastInsertRowid as number);
+        } catch (err: any) {
+          pool.releaseConnection(connector.id);
+          logger.error(err);
+          reject(err);
+        }
+      })
+      .catch((err) => {
+        logger.error(err);
+        reject(err);
+      });
+  });
 };
 
 export { execQuery };
+export { execNonQuery };
+export { execInsert };
