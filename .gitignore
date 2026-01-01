@@ -62,3 +62,7 @@ typings/
 
 deploy/
 dist/
+
+# SQLite database files
+*.db
+test_data/
