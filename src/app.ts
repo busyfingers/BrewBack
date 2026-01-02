@@ -8,7 +8,7 @@ import * as users from './models/users';
 import * as temperatureRouter from './routes/temperature';
 import * as batchRouter from './routes/batchdata';
 import * as fermProfileRouter from './routes/fermentationProfile';
-import * as pool from './database/connectionPool';
+import { getDatabase, closeDatabase } from './database/database';
 import { initializeDatabase } from './database/schema';
 import * as config from './config/config';
 
@@ -41,19 +41,17 @@ app.all('*', function (req, res) {
   res.sendStatus(404);
 });
 
-// Initialize database and pool
-async function startServer() {
+// Initialize database
+function startServer() {
   try {
     // Set config values
     config.setConfigValues();
 
-    // Initialize connection pool
-    await pool.initiateConnectionPool();
+    // Initialize database connection (singleton)
+    const db = getDatabase();
 
-    // Get first connection to initialize schema
-    const connector = await pool.getConnection();
-    initializeDatabase(connector.connection);
-    pool.releaseConnection(connector.id);
+    // Initialize schema
+    initializeDatabase(db);
 
     console.log('Database initialized successfully');
   } catch (error) {
@@ -61,6 +59,19 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  closeDatabase();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  closeDatabase();
+  process.exit(0);
+});
 
 // Start the server
 startServer();

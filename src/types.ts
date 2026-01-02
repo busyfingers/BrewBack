@@ -10,16 +10,6 @@ export type DatabaseConfig = {
   databasePath: string;
 };
 
-export type PoolItem = {
-  connection: Database.Database;
-  status: number;
-};
-
-export type Connector = {
-  id: number;
-  connection: Database.Database;
-};
-
 export type QueryParameter = {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'null';
