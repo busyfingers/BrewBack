@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import * as users from './models/users';
+import { UserRepository, TemperatureRepository, BatchRepository, FermentationProfileRepository } from './repositories';
 import { createTemperatureRouter } from './routes/temperature';
 import { createBatchDataRouter } from './routes/batchdata';
 import { createFermentationProfileRouter } from './routes/fermentationProfile';
@@ -19,13 +19,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// User lookup function for authentication
-const getUserByToken = users.getByToken;
+// Create repositories with database functions
+const userRepository = new UserRepository(execQuery);
+const temperatureRepository = new TemperatureRepository(execQuery, execNonQuery);
+const batchRepository = new BatchRepository(execQuery, execNonQuery);
+const fermentationProfileRepository = new FermentationProfileRepository(execQuery, execNonQuery);
 
-// Create routers with real database functions
-app.use('/api/temperature', createTemperatureRouter(getUserByToken, execQuery, execNonQuery));
-app.use('/api/batchdata', createBatchDataRouter(getUserByToken, execQuery, execNonQuery));
-app.use('/api/fermentationProfile', createFermentationProfileRouter(getUserByToken, execQuery));
+// User lookup function for authentication
+const getUserByToken = (token: string) => userRepository.findByToken(token);
+
+// Create routers with repositories
+app.use('/api/temperature', createTemperatureRouter(getUserByToken, temperatureRepository));
+app.use('/api/batchdata', createBatchDataRouter(getUserByToken, batchRepository, fermentationProfileRepository));
+app.use('/api/fermentationProfile', createFermentationProfileRouter(getUserByToken, fermentationProfileRepository));
 
 app.all('*', function (req, res) {
   res.sendStatus(404);

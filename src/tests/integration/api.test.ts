@@ -6,6 +6,12 @@ import Database from 'better-sqlite3';
 import { createTemperatureRouter } from '../../routes/temperature';
 import { createBatchDataRouter } from '../../routes/batchdata';
 import { createFermentationProfileRouter } from '../../routes/fermentationProfile';
+import {
+  UserRepository,
+  TemperatureRepository,
+  BatchRepository,
+  FermentationProfileRepository,
+} from '../../repositories';
 import { QueryParameter, RowResult } from '../../types';
 
 // Test database path
@@ -17,26 +23,12 @@ if (!fs.existsSync(testDataDir)) {
   fs.mkdirSync(testDataDir, { recursive: true });
 }
 
-// Query function for tests
-const createQueryFn = (db: Database.Database) => {
-  return async (sql: string, params: QueryParameter[]): Promise<RowResult[]> => {
-    const values = params.map((p) => p.value);
-    const stmt = db.prepare(sql);
-    return stmt.all(...values) as RowResult[];
-  };
-};
-
-// Non-query function for tests
-const createNonQueryFn = (db: Database.Database) => {
-  return async (sql: string, params: QueryParameter[]): Promise<void> => {
-    const values = params.map((p) => p.value);
-    const stmt = db.prepare(sql);
-    stmt.run(...values);
-  };
-};
+// Generic query executor for tests
+type QueryExecutor = (sql: string, params: QueryParameter[]) => Promise<RowResult[]>;
+type NonQueryExecutor = (sql: string, params: QueryParameter[]) => Promise<void>;
 
 /**
- * Create a test app with a fresh test database
+ * Create a test app with a fresh test database and repositories
  */
 const createTestApp = () => {
   // Clean up existing test database
@@ -115,23 +107,38 @@ const createTestApp = () => {
   db.prepare('INSERT INTO Fermentors (Name) VALUES (?)').run('Test Fermentor');
   db.prepare('INSERT INTO Sensors (Name) VALUES (?)').run('Test Sensor');
 
-  // Async user lookup function for test authentication
+  // Create query executors
+  const execQueryFn: QueryExecutor = async (sql: string, params: QueryParameter[]) => {
+    const values = params.map((p) => p.value);
+    const stmt = db.prepare(sql);
+    return stmt.all(...values) as RowResult[];
+  };
+
+  const execNonQueryFn: NonQueryExecutor = async (sql: string, params: QueryParameter[]) => {
+    const values = params.map((p) => p.value);
+    const stmt = db.prepare(sql);
+    stmt.run(...values);
+  };
+
+  // User lookup function for test authentication
   const getUserByToken = async (token: string) => {
     const user = db.prepare('SELECT Name FROM Users WHERE Active = 1 AND Token = ?').get(token) as { Name: string } | undefined;
     return user || null;
   };
 
-  // Query functions
-  const execQueryFn = createQueryFn(db);
-  const execNonQueryFn = createNonQueryFn(db);
+  // Create repositories with test database
+  const userRepository = new UserRepository(execQueryFn);
+  const temperatureRepository = new TemperatureRepository(execQueryFn, execNonQueryFn);
+  const batchRepository = new BatchRepository(execQueryFn, execNonQueryFn);
+  const fermentationProfileRepository = new FermentationProfileRepository(execQueryFn, execNonQueryFn);
 
   const app = express();
   app.use(express.json());
 
-  // Use actual route factories with test database
-  app.use('/api/temperature', createTemperatureRouter(getUserByToken, execQueryFn, execNonQueryFn));
-  app.use('/api/batchdata', createBatchDataRouter(getUserByToken, execQueryFn, execNonQueryFn));
-  app.use('/api/fermentationProfile', createFermentationProfileRouter(getUserByToken, execQueryFn));
+  // Use actual route factories with test repositories
+  app.use('/api/temperature', createTemperatureRouter(getUserByToken, temperatureRepository));
+  app.use('/api/batchdata', createBatchDataRouter(getUserByToken, batchRepository, fermentationProfileRepository));
+  app.use('/api/fermentationProfile', createFermentationProfileRouter(getUserByToken, fermentationProfileRepository));
 
   app.all('*', (req: any, res: any) => {
     res.sendStatus(404);

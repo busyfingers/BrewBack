@@ -1,30 +1,25 @@
 /**
- * Module dependencies
+ * User model - delegates to UserRepository
  */
-import * as logHelper from '../helpers/logHelper';
-import { QueryParameter } from '../types';
-import { execQuery } from '../database/db';
+import { UserRepository, User } from '../repositories';
+import { RowResult } from '../types';
 
-const logger = logHelper.getLogger('application');
+/**
+ * Create a user repository instance
+ */
+const createUserRepository = () => {
+  return new UserRepository(async (sql: string, params) => {
+    const { execQuery } = await import('../database/db');
+    return execQuery(sql, params) as Promise<RowResult[]>;
+  });
+};
 
 /**
  * Get a user by their authentication token
  * @param token - The API key/token to look up
  * @returns The user object if found, null otherwise
  */
-export const getByToken = async function (token: string): Promise<{ Name: string } | null> {
-  const query = 'SELECT Name FROM Users WHERE Active = 1 AND Token = ?';
-  const params: QueryParameter[] = [{ name: 'Token', type: 'string', value: token }];
-
-  try {
-    const result = await execQuery(query, params);
-    if (result.length === 1) {
-      return result[0] as { Name: string };
-    }
-
-    return null;
-  } catch (error) {
-    logger.error(error);
-    throw error;
-  }
+export const getByToken = async function (token: string): Promise<User | null> {
+  const repo = createUserRepository();
+  return repo.findByToken(token);
 };

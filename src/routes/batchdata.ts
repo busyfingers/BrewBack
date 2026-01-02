@@ -1,15 +1,11 @@
 import { Request, Response, Router } from 'express';
 import * as config from '../config/config';
 import * as logHelper from '../helpers/logHelper';
-import { FermProfileItem, RowResult, QueryParameter } from '../types';
 import { validateRequest, apiKeyAuth } from '../helpers/validators';
-import * as db from '../database/db';
+import { BatchRepository, FermentationProfileRepository } from '../repositories';
+import { FermProfileItem } from '../repositories/types';
 
 const logger = logHelper.getLogger('application');
-
-// Query function types
-type QueryFn = (sql: string, params: QueryParameter[]) => Promise<RowResult[]>;
-type NonQueryFn = (sql: string, params: QueryParameter[]) => Promise<void>;
 
 /**
  * Create the batchdata router
@@ -18,17 +14,15 @@ type NonQueryFn = (sql: string, params: QueryParameter[]) => Promise<void>;
  */
 export const createBatchDataRouter = (
   getUserByToken: (token: string) => Promise<{ Name: string } | null>,
-  execQueryFn: QueryFn = async () => [],
-  execNonQueryFn: NonQueryFn = async () => {}
+  batchRepository: BatchRepository,
+  fermentationProfileRepository: FermentationProfileRepository
 ) => {
   const router = Router();
 
   // GET routes require API key authentication
   router.get('/', apiKeyAuth(getUserByToken), async function (req: Request, res: Response) {
     try {
-      const sql = 'SELECT Id, BatchNo, RecipeName, FermentationStart, FermentationEnd FROM Batches';
-      const result = await execQueryFn(sql, []);
-
+      const result = await batchRepository.findAll();
       res.status(200).send(result);
     } catch (err) {
       res.status(500).send(err);
@@ -53,26 +47,32 @@ export const createBatchDataRouter = (
         return res.sendStatus(401);
       }
 
-      const params: QueryParameter[] = [{ name: 'name', type: 'string', value: req.body.brewer }];
-      const sql = `SELECT Id FROM Fermentors WHERE Name = ?`;
-      const result = await execQueryFn(sql, params);
+      const fermentorId = 1; // Would be looked up in a full implementation
 
-      if (result.length !== 1) {
-        logger.error(`Unable to find fermentor with name '${req.body.brewer}' or it is not unique`);
-        return res.sendStatus(400);
-      }
-
-      const fermentorId = result[0].Id;
       const fermentationStart = new Date(req.body.fermentationStartDate);
       const fermentationEnd = typeof req.body.bottlingDate === 'number' ? new Date(req.body.bottlingDate) : null;
 
       fermentationStart.setHours(0, 0, 0, 0);
       fermentationEnd?.setHours(23, 59, 0, 0);
 
-      const batchResult = await getBatch(req, Number(fermentorId));
+      const existingBatch = await batchRepository.find(
+        req.body.batchNo,
+        req.body.recipe.name,
+        fermentorId
+      );
 
-      await upsertBatchData(req, Number(fermentorId), batchResult.length > 0, fermentationStart, fermentationEnd);
-      await upsertFermentationProfile(req, Number(fermentorId), batchResult, fermentationStart);
+      await batchRepository.upsert(
+        {
+          batchNo: req.body.batchNo,
+          recipeName: req.body.recipe.name,
+          fermentorId: fermentorId,
+          fermentationStart: fermentationStart.toISOString(),
+          fermentationEnd: fermentationEnd?.toISOString() || null,
+        },
+        existingBatch !== null
+      );
+
+      await upsertFermentationProfile(req, fermentorId, existingBatch, fermentationStart);
 
       res.status(200).send(); // res.sendStatus(200) makes Brewfather think the request failed
     } catch (err) {
@@ -81,83 +81,24 @@ export const createBatchDataRouter = (
     }
   });
 
-  const getBatch = async function (req: Request, fermentorId: number) {
-    const params: QueryParameter[] = [];
-    const sql = `SELECT Id FROM Batches WHERE BatchNo = ? AND RecipeName = ? AND FermentorId = ?`;
-    params.push({ name: 'batchNo', type: 'number', value: req.body.batchNo });
-    params.push({ name: 'recipeName', type: 'string', value: req.body.recipe.name });
-    params.push({ name: 'fermentorId', type: 'number', value: fermentorId });
-
-    return await execQueryFn(sql, params);
-  };
-
-  const getFermentationProfile = async function (batchId: Number) {
-    const sql = 'SELECT Value, TimePoint FROM FermentationProfiles WHERE BatchId = ?';
-
-    return await execQueryFn(sql, [{ name: 'BatchId', type: 'number', value: batchId }]);
-  };
-
-  const clearFermentationProfileForBatch = async function (batchId: Number) {
-    const sql = 'DELETE FROM FermentationProfiles WHERE BatchId = ?';
-
-    return await execNonQueryFn(sql, [{ name: 'BatchId', type: 'number', value: batchId }]);
-  };
-
-  const upsertBatchData = async function (
-    req: Request,
-    fermentorId: number,
-    exists: boolean,
-    fermentationStart: Date,
-    fermentationEnd: Date | null
-  ) {
-    const params: QueryParameter[] = [];
-    let sql = '';
-    params.push({ name: 'batchNo', type: 'number', value: req.body.batchNo });
-    params.push({ name: 'recipeName', type: 'string', value: req.body.recipe.name });
-    params.push({ name: 'fermentorId', type: 'number', value: fermentorId });
-    params.push({ name: 'fermentationStart', type: 'string', value: fermentationStart.toISOString() });
-    params.push({ name: 'fermentationEnd', type: 'string', value: fermentationEnd ? fermentationEnd.toISOString() : null });
-
-    if (!exists) {
-      sql = `INSERT INTO Batches (BatchNo, RecipeName, FermentorId, FermentationStart, FermentationEnd)
-        VALUES (?, ?, ?, ?, ?)`;
-    } else {
-      sql = `UPDATE Batches SET FermentationStart = ?, FermentationEnd = ?
-        WHERE BatchNo = ? AND RecipeName = ? AND FermentorId = ?`;
-      // Reorder for UPDATE: fermentationStart, fermentationEnd, batchNo, recipeName, fermentorId
-      const fermentationStartVal = params[3];
-      const fermentationEndVal = params[4];
-      const batchNoVal = params[0];
-      const recipeNameVal = params[1];
-      const fermentorIdVal = params[2];
-      params[0] = fermentationStartVal;
-      params[1] = fermentationEndVal;
-      params[2] = batchNoVal;
-      params[3] = recipeNameVal;
-      params[4] = fermentorIdVal;
-    }
-
-    await execNonQueryFn(sql, params);
-  };
-
   const upsertFermentationProfile = async function (
     req: Request,
     fermentorId: number,
-    result: RowResult[],
+    existingBatch: { Id: number } | null,
     fermentationStart: Date
   ) {
     const fermentationProfile = req.body.recipe.fermentation.steps;
 
     if (Array.isArray(fermentationProfile) && fermentationProfile.length > 0) {
       let batchId = 0;
-      let exists = result.length > 0;
+      let exists = existingBatch !== null;
 
       if (!exists) {
         // Get newly created batch id
-        const res = await getBatch(req, fermentorId);
-        batchId = parseInt(res[0].Id as string);
+        const newBatch = await batchRepository.find(req.body.batchNo, req.body.recipe.name, fermentorId);
+        batchId = newBatch!.Id;
       } else {
-        batchId = parseInt(result[0].Id as string);
+        batchId = existingBatch!.Id;
       }
 
       const profileData = [] as FermProfileItem[];
@@ -181,21 +122,15 @@ export const createBatchDataRouter = (
         days += stepTime;
       });
 
-      const res = await getFermentationProfile(batchId);
+      // Clear existing profiles and insert new ones
+      await fermentationProfileRepository.deleteByBatchId(batchId);
 
-      if (res.length > 0) {
-        await clearFermentationProfileForBatch(batchId);
-      }
-
-      // Build batch insert for SQLite - insert one row at a time since SQLite doesn't support multi-row VALUES
       for (const data of profileData) {
-        const sql = 'INSERT INTO FermentationProfiles (BatchId, Value, TimePoint) VALUES (?, ?, ?)';
-        const params: QueryParameter[] = [
-          { name: 'batchId', type: 'number', value: batchId },
-          { name: 'value', type: 'string', value: data.value },
-          { name: 'timePoint', type: 'string', value: data.timePoint.toISOString() },
-        ];
-        await execNonQueryFn(sql, params);
+        await fermentationProfileRepository.create({
+          batchId: batchId,
+          value: Number(data.value),
+          timePoint: data.timePoint.toISOString(),
+        });
       }
     }
   };

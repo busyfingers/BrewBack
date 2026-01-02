@@ -1,16 +1,13 @@
 import { Request, Response, Router } from 'express';
-import { QueryParameter, RowResult } from '../types';
 import { apiKeyAuth } from '../helpers/validators';
-
-// Generic query function type
-type QueryFn<T = RowResult> = (sql: string, params: QueryParameter[]) => Promise<T[]>;
+import { FermentationProfileRepository } from '../repositories';
 
 /**
- * Create the fermentation profile router with user lookup function
+ * Create the fermentation profile router with user lookup and repository
  */
 export const createFermentationProfileRouter = (
   getUserByToken: (token: string) => Promise<{ Name: string } | null>,
-  execQueryFn: QueryFn = async () => []
+  fermentationProfileRepository: FermentationProfileRepository
 ) => {
   const router = Router();
 
@@ -20,10 +17,7 @@ export const createFermentationProfileRouter = (
         return res.status(400).send('Missing batchId in query string');
       }
 
-      const sql = 'SELECT Value, TimePoint FROM FermentationProfiles WHERE BatchId = ? ORDER BY TimePoint ASC';
-      const params: QueryParameter[] = [{ name: 'batchId', type: 'number', value: req.query.batchId }];
-      const result = await execQueryFn(sql, params);
-
+      const result = await fermentationProfileRepository.findByBatchId(Number(req.query.batchId));
       res.status(200).send(result);
     } catch (err) {
       res.status(500).send(err);
