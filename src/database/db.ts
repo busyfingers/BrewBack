@@ -87,27 +87,5 @@ const execNonQuery = function (query: string, params: Array<QueryParameter>): Pr
   });
 };
 
-const execInsert = function (query: string, params: Array<QueryParameter>): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
-    try {
-      const db = getDatabase();
-      const values = getParamValues(params);
-      const stmt = db.prepare(query);
-      const result = stmt.run(...values);
-
-      logger.info(`Insert complete: '${query}'`);
-      if (params && params.length > 0) {
-        logger.info(getParamLogString(params));
-      }
-      // Return the last insert row id
-      resolve(result.lastInsertRowid as number);
-    } catch (err: any) {
-      logger.error(err);
-      reject(err);
-    }
-  });
-};
-
 export { execQuery };
 export { execNonQuery };
-export { execInsert };
