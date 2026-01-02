@@ -47,25 +47,19 @@ export const validateRequest = function (body: BatchDataRequestBody): boolean {
 
 /**
  * API Key authentication middleware factory
- * Validates the Authorization header: "Bearer <api-key>"
+ * Validates the X-API-Key header
  * @param getUserByToken - Async function to look up user by token
  * @returns Express middleware function
  */
 export const apiKeyAuth = (getUserByToken: (token: string) => Promise<{ Name: string } | null>) => {
   return async (req: Request, res: Response, next: Function) => {
-    const authHeader = req.headers.authorization;
+    const apiKey = req.headers['x-api-key'];
 
-    if (!authHeader) {
+    if (!apiKey || typeof apiKey !== 'string') {
       return res.sendStatus(401);
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
-      return res.sendStatus(401);
-    }
-
-    const token = parts[1];
-    const user = await getUserByToken(token);
+    const user = await getUserByToken(apiKey);
 
     if (user) {
       (req as any).user = user;

@@ -167,21 +167,21 @@ describe('API Integration Tests', () => {
   });
 
   describe('Authentication', () => {
-    it('should reject requests without Authorization header', () => {
+    it('should reject requests without X-API-Key header', () => {
       return request(app).get('/api/temperature').expect(401);
     });
 
     it('should reject requests with invalid token', () => {
       return request(app)
         .get('/api/temperature')
-        .set('Authorization', 'Bearer invalid-token')
+        .set('X-API-Key', 'invalid-token')
         .expect(401);
     });
 
     it('should accept requests with valid token', () => {
       return request(app)
         .get('/api/temperature')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200);
     });
   });
@@ -200,7 +200,7 @@ describe('API Integration Tests', () => {
     it('should return temperature readings with authentication', () => {
       return request(app)
         .get('/api/temperature')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(2);
@@ -213,7 +213,7 @@ describe('API Integration Tests', () => {
       return request(app)
         .get('/api/temperature')
         .query({ from: '2025-01-02T00:00:00.000Z' })
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(1);
@@ -225,7 +225,7 @@ describe('API Integration Tests', () => {
       return request(app)
         .get('/api/temperature')
         .query({ to: '2025-01-01T23:59:59.999Z' })
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(1);
@@ -237,7 +237,7 @@ describe('API Integration Tests', () => {
       return request(app)
         .get('/api/temperature')
         .query({ from: '2025-01-01T00:00:00.000Z', to: '2025-01-01T23:59:59.999Z' })
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(1);
@@ -249,7 +249,7 @@ describe('API Integration Tests', () => {
     it('should create temperature reading', () => {
       return request(app)
         .post('/api/temperature')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .send({
           value: 22.5,
           location: 'fermenter',
@@ -269,7 +269,7 @@ describe('API Integration Tests', () => {
     it('should return 400 for invalid payload', () => {
       return request(app)
         .post('/api/temperature')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .send({})
         .expect(400);
     });
@@ -286,7 +286,7 @@ describe('API Integration Tests', () => {
     it('should return batch data', () => {
       return request(app)
         .get('/api/batchdata')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(1);
@@ -301,7 +301,7 @@ describe('API Integration Tests', () => {
 
       return request(app)
         .get('/api/batchdata')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(0);
@@ -327,7 +327,7 @@ describe('API Integration Tests', () => {
       return request(app)
         .get('/api/fermentationProfile')
         .query({ batchId: 1 })
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(2);
@@ -339,7 +339,7 @@ describe('API Integration Tests', () => {
     it('should return 400 when batchId is missing', () => {
       return request(app)
         .get('/api/fermentationProfile')
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(400);
     });
 
@@ -347,7 +347,7 @@ describe('API Integration Tests', () => {
       return request(app)
         .get('/api/fermentationProfile')
         .query({ batchId: 999 })
-        .set('Authorization', 'Bearer test-token-123')
+        .set('X-API-Key', 'test-token-123')
         .expect(200)
         .expect((res: any) => {
           expect(res.body).toHaveLength(0);
