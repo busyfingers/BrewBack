@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build output
+dist
+
+# Configuration - customize per deployment
+# .env files are not copied, use volume mounts or environment variables
+.env
+.env.*
+!.env.example
+
+# Database files
+*.db
+test_data/
+
+# Logs
+logs
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+.jest
+
+# Git
+.git
+.gitignore
+
+# CI
+.github
+.gitlab-ci.yml
