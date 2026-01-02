@@ -1,10 +1,12 @@
 import request from 'supertest';
 import express from 'express';
-import passport from 'passport';
-import { Strategy } from 'passport-http-bearer';
 import * as path from 'path';
 import * as fs from 'fs';
 import Database from 'better-sqlite3';
+import { createTemperatureRouter } from '../../routes/temperature';
+import { createBatchDataRouter } from '../../routes/batchdata';
+import { createFermentationProfileRouter } from '../../routes/fermentationProfile';
+import { QueryParameter, RowResult } from '../../types';
 
 // Test database path
 const TEST_DB_PATH = path.join(__dirname, '../test_data/api_test.db');
@@ -15,7 +17,27 @@ if (!fs.existsSync(testDataDir)) {
   fs.mkdirSync(testDataDir, { recursive: true });
 }
 
-// Create a test app with in-memory SQLite database
+// Query function for tests
+const createQueryFn = (db: Database.Database) => {
+  return async (sql: string, params: QueryParameter[]): Promise<RowResult[]> => {
+    const values = params.map((p) => p.value);
+    const stmt = db.prepare(sql);
+    return stmt.all(...values) as RowResult[];
+  };
+};
+
+// Non-query function for tests
+const createNonQueryFn = (db: Database.Database) => {
+  return async (sql: string, params: QueryParameter[]): Promise<void> => {
+    const values = params.map((p) => p.value);
+    const stmt = db.prepare(sql);
+    stmt.run(...values);
+  };
+};
+
+/**
+ * Create a test app with a fresh test database
+ */
 const createTestApp = () => {
   // Clean up existing test database
   if (fs.existsSync(TEST_DB_PATH)) {
@@ -90,107 +112,26 @@ const createTestApp = () => {
   db.prepare('INSERT INTO Users (Name, Token, Active) VALUES (?, ?, 1)').run('TestUser', 'test-token-123');
 
   // Insert test fermentor and sensor
-  const fermentorResult = db.prepare('INSERT INTO Fermentors (Name) VALUES (?)').run('Test Fermentor');
-  const sensorResult = db.prepare('INSERT INTO Sensors (Name) VALUES (?)').run('Test Sensor');
+  db.prepare('INSERT INTO Fermentors (Name) VALUES (?)').run('Test Fermentor');
+  db.prepare('INSERT INTO Sensors (Name) VALUES (?)').run('Test Sensor');
 
-  // Configure passport
-  const strategy = new Strategy(async (token: string, cb: Function) => {
+  // Async user lookup function for test authentication
+  const getUserByToken = async (token: string) => {
     const user = db.prepare('SELECT Name FROM Users WHERE Active = 1 AND Token = ?').get(token) as { Name: string } | undefined;
-    if (user) {
-      return cb(null, user);
-    }
-    return cb(null, false);
-  });
-  passport.use(strategy);
+    return user || null;
+  };
+
+  // Query functions
+  const execQueryFn = createQueryFn(db);
+  const execNonQueryFn = createNonQueryFn(db);
 
   const app = express();
   app.use(express.json());
 
-  // Temperature routes
-  app.get('/api/temperature', passport.authenticate('bearer', { session: false }), (req: any, res: any) => {
-    try {
-      let query = `SELECT T.Value, T.Location, T.MeasuredAt, S.Name AS Sensor, F.Name AS Fermentor
-        FROM Temperature T
-        LEFT JOIN Sensors S ON T.SensorId = S.Id
-        LEFT JOIN Fermentors F ON T.FermentorId = F.Id
-        LEFT JOIN Batches B
-        ON (T.MeasuredAt >= B.FermentationStart) AND (T.MeasuredAt <= IFNULL(B.FermentationEnd, '2999-01-01 00:00:00'))
-        WHERE 1=1`;
-
-      const params: any[] = [];
-
-      if (req.query.from) {
-        query += ' AND MeasuredAt >= ?';
-        params.push(req.query.from);
-      }
-      if (req.query.to) {
-        query += ' AND MeasuredAt <= ?';
-        params.push(req.query.to);
-      }
-
-      query += ' ORDER BY MeasuredAt';
-
-      const stmt = db.prepare(query);
-      const results = stmt.all(...params);
-      res.json(results);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  });
-
-  app.post('/api/temperature', passport.authenticate('bearer', { session: false }), (req: any, res: any) => {
-    try {
-      const { value, location, measuredAt, sensorName, fermentorName } = req.body;
-
-      // Validate payload
-      if (!value || !measuredAt || !location) {
-        return res.sendStatus(400);
-      }
-      if (typeof value !== 'number' || typeof measuredAt !== 'number' || typeof location !== 'string') {
-        return res.sendStatus(400);
-      }
-
-      const sensorStmt = db.prepare('SELECT Id FROM Sensors WHERE Name = ?');
-      const sensor = sensorStmt.get(sensorName) as { Id: number } | undefined;
-
-      const fermentorStmt = db.prepare('SELECT Id FROM Fermentors WHERE Name = ?');
-      const fermentor = fermentorStmt.get(fermentorName) as { Id: number } | undefined;
-
-      const insertStmt = db.prepare(
-        'INSERT INTO Temperature (Value, Location, MeasuredAt, SensorId, FermentorId) VALUES (?, ?, ?, ?, ?)'
-      );
-      insertStmt.run(value.toFixed(2), location, new Date(measuredAt).toISOString(), sensor?.Id || null, fermentor?.Id || null);
-
-      res.sendStatus(200);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  });
-
-  // Batches routes
-  app.get('/api/batchdata', passport.authenticate('bearer', { session: false }), (req: any, res: any) => {
-    try {
-      const results = db.prepare('SELECT Id, BatchNo, RecipeName, FermentationStart, FermentationEnd FROM Batches').all();
-      res.json(results);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  });
-
-  // Fermentation profile routes
-  app.get('/api/fermentationProfile', passport.authenticate('bearer', { session: false }), (req: any, res: any) => {
-    try {
-      if (!req.query.batchId) {
-        return res.status(400).send('Missing batchId in query string');
-      }
-
-      const stmt = db.prepare('SELECT Value, TimePoint FROM FermentationProfiles WHERE BatchId = ? ORDER BY TimePoint ASC');
-      const results = stmt.all(req.query.batchId);
-      res.json(results);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  });
+  // Use actual route factories with test database
+  app.use('/api/temperature', createTemperatureRouter(getUserByToken, execQueryFn, execNonQueryFn));
+  app.use('/api/batchdata', createBatchDataRouter(getUserByToken, execQueryFn, execNonQueryFn));
+  app.use('/api/fermentationProfile', createFermentationProfileRouter(getUserByToken, execQueryFn));
 
   app.all('*', (req: any, res: any) => {
     res.sendStatus(404);

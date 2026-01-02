@@ -1,4 +1,5 @@
-import { Measurement } from '../types';
+import { Request, Response } from 'express';
+import { QueryParameter, RowResult } from '../types';
 
 // Type definition for the batchdata request body
 export interface BatchDataRequestBody {
@@ -45,11 +46,42 @@ export const validateRequest = function (body: BatchDataRequestBody): boolean {
 };
 
 /**
+ * API Key authentication middleware factory
+ * Validates the Authorization header: "Bearer <api-key>"
+ * @param getUserByToken - Async function to look up user by token
+ * @returns Express middleware function
+ */
+export const apiKeyAuth = (getUserByToken: (token: string) => Promise<{ Name: string } | null>) => {
+  return async (req: Request, res: Response, next: Function) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.sendStatus(401);
+    }
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+      return res.sendStatus(401);
+    }
+
+    const token = parts[1];
+    const user = await getUserByToken(token);
+
+    if (user) {
+      (req as any).user = user;
+      next();
+    } else {
+      res.sendStatus(401);
+    }
+  };
+};
+
+/**
  * Validates the temperature measurement payload
  * @param data - Measurement data object
  * @returns true if the payload is valid, false otherwise
  */
-export const validatePayload = function (data: Measurement): boolean {
+export const validatePayload = function (data: any): boolean {
   if (Object.keys(data).length === 0 && data.constructor === Object) {
     return false;
   }
